@@ -46,6 +46,7 @@
 
         .desktop.hidden {
             transform: translateX(-100%);
+    overflow: hidden; /* 关键：禁止桌面容器内部滚动 */
         }
 
         .widget {
@@ -2464,7 +2465,7 @@
             display: flex;
             justify-content: space-around;
             align-items: flex-start;
-            padding-top: 8px;
+            padding-top: 4px;
             background-color: var(--pure-pink);
             box-sizing: border-box;
         }

@@ -24,15 +24,13 @@
         }
 
         body, html {
-            margin: 0; padding: 0; width: 100vw;
-            /* 修改点：使用dvh完美适配iOS动态屏幕高度 */
-            height: 100dvh; 
+            margin: 0; padding: 0; width: 100vw; height: 100vh;
+            padding-top: 0px;
             font-family: -apple-system, "Helvetica Neue", sans-serif;
             background-color: #ffffff;
             overflow: hidden;
             box-sizing: border-box;
         }
-
 
         /* 主页面 */
         .desktop {
@@ -40,20 +38,14 @@
             height: 100%;
             display: flex; 
             flex-direction: column;
-            
-            /* 修改点：智能计算顶部距离 (刘海高度 + 10px微调) */
-            padding-top: calc(env(safe-area-inset-top) + 10px);
-            padding-right: 5%;
-            padding-left: 5%;
+            padding: 15px 5% 0;
             padding-bottom: 15px;
-            
             box-sizing: border-box;
             transition: transform 0.4s ease;
         }
 
         .desktop.hidden {
             transform: translateX(-100%);
-    overflow: hidden; /* 关键：禁止桌面容器内部滚动 */
         }
 
         .widget {
@@ -66,7 +58,7 @@
             display: flex;
             align-items: center;
             padding: 0 20px 0 25px;
-            margin-bottom: 10px;
+            margin-bottom: 20px;
             position: relative;
             box-sizing: border-box;
             flex-shrink: 0;
@@ -191,7 +183,7 @@
             display: flex;
             justify-content: space-between; /* 图标之间自动平均分布 */
             padding: 0 10px; /* 两边留出等距间隔 */
-            margin-bottom: 10px;
+            margin-bottom: 20px;
             box-sizing: border-box;
             width: 100%; /* 占满容器宽度 */
             flex-shrink: 0;
@@ -228,7 +220,7 @@
 
         .dock-container {
             position: absolute;
-            bottom: 10px;
+            bottom: 30px;
             left: 50%;
             transform: translateX(-50%);
             width: 88%;
@@ -265,7 +257,7 @@
         .wechat-page {
             position: fixed;
             top: 0; left: 0;
-            width: 100vw; height: 100vh;
+            width: 100%; height: 100%;
             background-color: #ffffff;
             z-index: 20;
             display: flex;
@@ -336,7 +328,7 @@
             align-items: center; /* 垂直居中 */
             justify-content: space-between;
             padding: 15px 15px 0;
-            padding-top: calc(15px + env(safe-area-inset-top));
+            padding-top: calc(15px);
             background-color: #ffffff;
             border-bottom: 1px solid #f0f0f0;
             box-sizing: border-box;
@@ -532,7 +524,7 @@
             align-items: center;
             justify-content: space-between;
             padding: 15px 15px 0;
-            padding-top: calc(15px + env(safe-area-inset-top));
+            padding-top: calc(15px);
             background-color: var(--pure-pink);
             border-bottom: 1px solid var(--border-pink);
             box-sizing: border-box;
@@ -773,13 +765,13 @@
             left: 0;
             right: 0;
             min-height: 60px;
-            height: calc(60px + env(safe-area-inset-bottom));
+            height: calc(60px);
             background-color: var(--pure-pink);
             border-top: 1px solid var(--border-pink);
             display: flex;
             align-items: center;
             padding: 8px 12px;
-            padding-bottom: calc(8px + env(safe-area-inset-bottom));
+            padding-bottom: calc(8px);
             gap: 8px;
             box-sizing: border-box;
             z-index: 2000; /* 确保聊天输入栏在底部导航栏之上 */
@@ -1621,7 +1613,7 @@
             align-items: center;
             justify-content: space-between;
             padding: 15px 15px 0;
-            padding-top: calc(15px + env(safe-area-inset-top));
+            padding-top: calc(15px);
             background: rgba(0, 0, 0, 0.3);
             box-sizing: border-box;
             color: white;
@@ -1794,7 +1786,7 @@
             align-items: center;
             justify-content: space-between;
             padding: 15px 15px 0;
-            padding-top: calc(15px + env(safe-area-inset-top));
+            padding-top: calc(15px);
             background-color: #ffffff;
             border-bottom: 1px solid #f0f0f0;
             box-sizing: border-box;
@@ -2465,14 +2457,14 @@
             right: 0;
             width: 100%;
             min-height: 60px;
-            height: calc(60px + env(safe-area-inset-bottom));
-            padding-bottom: env(safe-area-inset-bottom);
+            height: calc(60px);
+            padding-bottom: 0px;
             z-index: 100;
             border-top: 1px solid var(--border-pink);
             display: flex;
             justify-content: space-around;
             align-items: flex-start;
-            padding-top: 4px;
+            padding-top: 8px;
             background-color: var(--pure-pink);
             box-sizing: border-box;
         }
@@ -3740,7 +3732,7 @@
             height: 120px;
             background: linear-gradient(135deg, #ff9a9e 0%, #ff758c 100%);
             padding: 20px;
-            padding-top: calc(20px + env(safe-area-inset-top));
+            padding-top: calc(20px);
             color: white;
             position: relative;
             display: flex;
@@ -3749,7 +3741,7 @@
         
         .back-btn-white {
             position: absolute;
-            top: calc(10px + env(safe-area-inset-top));
+            top: calc(10px);
             left: 10px;
             width: 30px;
             height: 30px;

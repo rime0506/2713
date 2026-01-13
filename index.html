@@ -24,13 +24,15 @@
         }
 
         body, html {
-            margin: 0; padding: 0; width: 100vw; height: 100vh;
-            padding-top: env(safe-area-inset-top);
+            margin: 0; padding: 0; width: 100vw;
+            /* 修改点：使用dvh完美适配iOS动态屏幕高度 */
+            height: 100dvh; 
             font-family: -apple-system, "Helvetica Neue", sans-serif;
             background-color: #ffffff;
             overflow: hidden;
             box-sizing: border-box;
         }
+
 
         /* 主页面 */
         .desktop {
@@ -38,8 +40,13 @@
             height: 100%;
             display: flex; 
             flex-direction: column;
-            padding: 15px 5% 0;
+            
+            /* 修改点：智能计算顶部距离 (刘海高度 + 10px微调) */
+            padding-top: calc(env(safe-area-inset-top) + 10px);
+            padding-right: 5%;
+            padding-left: 5%;
             padding-bottom: 15px;
+            
             box-sizing: border-box;
             transition: transform 0.4s ease;
         }

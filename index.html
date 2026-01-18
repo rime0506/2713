@@ -23520,7 +23520,6 @@ self.addEventListener('install', function(event) {
         return cache.addAll(['/']);
       })
   );
-  self.skipWaiting(); // 立即激活
 });
 
 // 激活 Service Worker
@@ -23537,7 +23536,6 @@ self.addEventListener('activate', function(event) {
       );
     })
   );
-  return self.clients.claim(); // 立即控制所有客户端
 });
 
 // 处理推送通知
@@ -33662,6 +33660,31 @@ ${linkedContents}
       const maxMemory = parseInt(chat.settings.maxMemory) || 10;
       const historySlice = chat.history.slice(-maxMemory);
       const filteredHistory = await filterHistoryWithDoNotSendRules(historySlice, chatId);
+      
+      // 【观影室】自动截取视频画面并处理
+      let videoContext = '';
+      if (window.screeningRoomContext && window.screeningRoomContext.isWatching) {
+          const ctx = window.screeningRoomContext.getContext();
+          const frameData = window.screeningRoomContext.captureFrame();
+          
+          if (ctx && (ctx.title || ctx.isPaused)) {
+               videoContext = `\n\n# 当前观影情景 (Screening Room)
+               - 你们正在一起观看视频。
+               - **视频标题**: ${ctx.title || '未知'}
+               - **状态**: ${ctx.isPaused ? '暂停中' : '播放中'}
+               - **当前播放时间**: ${ctx.currentTime ? Math.floor(ctx.currentTime) : 0}秒
+               - **你的任务**: 作为陪看伙伴，请根据视频内容和你的角色设定，与用户讨论剧情。
+               `;
+               
+               if (frameData) {
+                   videoContext += `\n- **画面感知**: 已截取当前视频画面并发送给你，请结合画面内容进行回复。`;
+                   console.log('【观影室】成功截取视频画面');
+               } else {
+                   videoContext += `\n- **画面感知**: 当前无法截取画面（可能是版权受限的在线视频），请主要依赖标题和剧情常识进行互动。`;
+               }
+          }
+      }
+      
       let sharedContext = '';
       const lastAiTurnIndex = chat.history.findLastIndex(msg => msg.role === 'assistant');
       const recentUserMessages = chat.history.slice(lastAiTurnIndex + 1);
@@ -34041,6 +34064,7 @@ ${chat.longTermMemory && chat.longTermMemory.length > 0 ? chat.longTermMemory.ma
 ${multiLayeredSummaryContext_group}
 ${linkedMemoryContext}
 ${musicContext}
+${videoContext}
 ${sharedContext}
 ${groupAvatarLibraryContext}
 # 可用表情包 (必须严格遵守！)
@@ -34938,6 +34962,7 @@ ${weatherContext}
 ${timeContext}
 - **情景感知**:
     - **音乐**: ${musicContext ? '你们正在一起听歌，' + musicContext : '你们没有在听歌。'}
+    - **视频**: ${videoContext ? '你们正在一起看视频。' + videoContext : '你们没有在看视频。'}
     - **读书**: ${readingContext ? '你们正在一起读书。' + readingContext : '你们没有在读书。'}
 - **社交圈与动态**:
 ${contactsList}
@@ -39621,6 +39646,49 @@ ${longTimeNoSee ? `【重要提示】你们已经很久没聊天了！你【必�
         };
       })
     ];
+    
+    // 【观影室修复】在 messagesPayload 初始化后处理视频截图
+    if (window.screeningRoomContext && window.screeningRoomContext.isWatching) {
+        const ctx = window.screeningRoomContext.getContext();
+        const frameData = window.screeningRoomContext.captureFrame();
+        
+        if (frameData && Array.isArray(messagesPayload) && messagesPayload.length > 0) {
+            console.log('【观影室】在 messagesPayload 初始化后注入视频画面...');
+            
+            // 查找最后一条用户消息
+            const lastUserMsgIndex = messagesPayload.findLastIndex(m => m.role === 'user');
+            if (lastUserMsgIndex !== -1) {
+                const originalContent = messagesPayload[lastUserMsgIndex].content;
+                // 如果原来是字符串，转换为数组
+                if (typeof originalContent === 'string') {
+                    messagesPayload[lastUserMsgIndex].content = [
+                        { type: 'text', text: originalContent },
+                        { type: 'image_url', image_url: { url: frameData } }
+                    ];
+                } else if (Array.isArray(originalContent)) {
+                    // 如果已经是数组，检查是否已有图片，避免重复添加
+                    const hasImage = originalContent.some(part => part.type === 'image_url');
+                    if (!hasImage) {
+                        messagesPayload[lastUserMsgIndex].content.push({
+                            type: 'image_url',
+                            image_url: { url: frameData }
+                        });
+                    }
+                }
+                console.log('【观影室】✅ 成功将视频画面添加到最后一条用户消息');
+            } else {
+                // 如果没有用户消息，则作为单独的一条消息插入
+                messagesPayload.push({
+                    role: 'user',
+                    content: [
+                        { type: 'text', text: '[系统提示：这是用户当前看到的视频画面]' },
+                        { type: 'image_url', image_url: { url: frameData } }
+                    ]
+                });
+                console.log('【观影室】✅ 将视频画面作为新消息添加');
+            }
+        }
+    }
 
     try {
       const messagesPayload = [{
@@ -40301,6 +40369,49 @@ ${longTermMemoryContext}
         };
       })
     ];
+    
+    // 【观影室修复】在 messagesPayload 初始化后处理视频截图
+    if (window.screeningRoomContext && window.screeningRoomContext.isWatching) {
+        const ctx = window.screeningRoomContext.getContext();
+        const frameData = window.screeningRoomContext.captureFrame();
+        
+        if (frameData && Array.isArray(messagesPayload) && messagesPayload.length > 0) {
+            console.log('【观影室】在群聊 messagesPayload 中注入视频画面...');
+            
+            // 查找最后一条用户消息
+            const lastUserMsgIndex = messagesPayload.findLastIndex(m => m.role === 'user');
+            if (lastUserMsgIndex !== -1) {
+                const originalContent = messagesPayload[lastUserMsgIndex].content;
+                // 如果原来是字符串，转换为数组
+                if (typeof originalContent === 'string') {
+                    messagesPayload[lastUserMsgIndex].content = [
+                        { type: 'text', text: originalContent },
+                        { type: 'image_url', image_url: { url: frameData } }
+                    ];
+                } else if (Array.isArray(originalContent)) {
+                    // 如果已经是数组，检查是否已有图片，避免重复添加
+                    const hasImage = originalContent.some(part => part.type === 'image_url');
+                    if (!hasImage) {
+                        messagesPayload[lastUserMsgIndex].content.push({
+                            type: 'image_url',
+                            image_url: { url: frameData }
+                        });
+                    }
+                }
+                console.log('【观影室】✅ 成功将视频画面添加到群聊最后一条用户消息');
+            } else {
+                // 如果没有用户消息，则作为单独的一条消息插入
+                messagesPayload.push({
+                    role: 'user',
+                    content: [
+                        { type: 'text', text: '[系统提示：这是用户当前看到的视频画面]' },
+                        { type: 'image_url', image_url: { url: frameData } }
+                    ]
+                });
+                console.log('【观影室】✅ 将视频画面作为新消息添加到群聊');
+            }
+        }
+    }
 
     try {
       const messagesPayload = [{
@@ -79525,6 +79636,86 @@ async function saveSplitStickersToMyEmojis() {
             });
             observer.observe(movieScreen, { attributes: true });
         }
+        
+        // ========== 视频截取和上下文获取功能 ==========
+        let isPaused = false;
+        let currentVideoTitle = '当前视频';
+        
+        // 截取视频画面
+        function captureFrame() {
+            try {
+                const movieVideo = document.getElementById('movie-video');
+                // 1. 尝试从 video 标签截图
+                if (movieVideo && !movieVideo.paused && movieVideo.readyState >= 2) {
+                    const canvas = document.createElement('canvas');
+                    // 限制尺寸以减少 Token 消耗和传输延迟
+                    canvas.width = 480; 
+                    const ratio = movieVideo.videoHeight / movieVideo.videoWidth;
+                    canvas.height = canvas.width * ratio;
+                    
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(movieVideo, 0, 0, canvas.width, canvas.height);
+                    
+                    // 转换为 Base64 (JPEG 格式, 0.7 质量)
+                    return canvas.toDataURL('image/jpeg', 0.7);
+                }
+                
+                // 2. 如果是 iframe，暂时无法截图（跨域限制），返回 null
+                return null;
+            } catch (e) {
+                console.error('截图失败:', e);
+                return null;
+            }
+        }
+        
+        // 获取视频上下文信息
+        function getContext() {
+            const movieVideo = document.getElementById('movie-video');
+            // 获取视频标题
+            let title = currentVideoTitle;
+            const activeCard = document.querySelector('.movie-card:active, .movie-card:hover');
+            if (activeCard) title = activeCard.querySelector('.movie-title')?.textContent.trim() || title;
+            
+            return {
+                title: title,
+                isPaused: isPaused,
+                currentTime: movieVideo ? movieVideo.currentTime : 0
+            };
+        }
+        
+        // 初始化视频事件监听
+        function initVideoEventListeners() {
+            const movieVideo = document.getElementById('movie-video');
+            if (movieVideo) {
+                movieVideo.addEventListener('pause', () => isPaused = true);
+                movieVideo.addEventListener('play', () => isPaused = false);
+            }
+        }
+        
+        // 将上下文暴露给全局 window 对象
+        window.screeningRoomContext = {
+            isWatching: false,
+            toggleFloatingChat: toggleFloatingChat,
+            getContext: getContext,
+            captureFrame: captureFrame
+        };
+        
+        // 修改 toggleFloatingChat 以设置 isWatching 状态
+        const originalToggleFloatingChat = toggleFloatingChat;
+        toggleFloatingChat = function() {
+            const willBeOpen = !chatScreen.classList.contains('active') || !chatScreen.classList.contains('floating-chat-window');
+            originalToggleFloatingChat();
+            
+            if (willBeOpen) {
+                window.screeningRoomContext.isWatching = true;
+                initVideoEventListeners();
+            } else {
+                window.screeningRoomContext.isWatching = false;
+            }
+        };
+        
+        // 更新全局引用
+        window.screeningRoomContext.toggleFloatingChat = toggleFloatingChat;
     })();
   </script>
 </body>

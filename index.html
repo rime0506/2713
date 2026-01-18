@@ -6261,7 +6261,7 @@
     font-size: 14px; font-weight: 500; width: 50px;
 }
 #char-music-player-modal #char-music-lyrics {
-    //display: none; 
+    /* display: none; */
 }
 @keyframes spin-vinyl {
   from { transform: rotate(0deg); }
@@ -8370,7 +8370,6 @@ body.frame-mode-active #phone-screen {
     min-height: auto; 
     max-width: 100%;
     max-height: 95vh; /* 最大高度，防止溢出 */
-    box-shadow: inset 0 0 0 1px #000,   
     box-shadow: 0 10px 35px rgba(0, 0, 0, 0.1);
     box-sizing: border-box; 
     position: relative; 
@@ -17973,6 +17972,274 @@ body.frame-mode-active .cphone-dock-container {
     outline: none;
     border-color: var(--deep-pink, #FF1493);
 }
+        /* 影视搜索样式（观影室） */
+        .movie-search-container {
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .movie-search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .movie-search-input {
+            flex: 1;
+            padding: 12px 16px;
+            font-size: 15px;
+            border: 1px solid #e0e0e0;
+            border-radius: 24px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+        .movie-search-input:focus {
+            border-color: #007bff;
+        }
+        .movie-search-btn {
+            padding: 12px 24px;
+            font-size: 15px;
+            font-weight: 600;
+            color: #ffffff;
+            background-color: #007bff;
+            border: none;
+            border-radius: 24px;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+        .movie-search-btn:hover {
+            background-color: #0056b3;
+        }
+        .movie-search-btn:active {
+            transform: scale(0.95);
+        }
+        .movie-results {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .movie-card {
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            border-radius: 8px;
+            overflow: hidden;
+            background-color: #ffffff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .movie-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        .movie-poster {
+            width: 100%;
+            aspect-ratio: 2/3;
+            object-fit: cover;
+            display: block;
+        }
+        .movie-title {
+            padding: 8px;
+            font-size: 13px;
+            color: #1f1f1f;
+            text-align: center;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .movie-platform-tag {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: white;
+            font-size: 10px;
+            font-weight: bold;
+            z-index: 2;
+        }
+        .movie-platform-tag.bilibili {
+            background-color: #00a1d6;
+        }
+        .movie-platform-tag.yinghua {
+            background-color: #ff8eb3;
+        }
+        .movie-player-container {
+            display: none;
+            position: relative;
+            width: 100%;
+            margin-top: 20px;
+            background-color: transparent;
+            z-index: 100;
+        }
+        .movie-player-container.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+        .movie-iframe {
+            width: 100%;
+            aspect-ratio: 16/9;
+            border: none;
+            display: block;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+            background-color: #000;
+        }
+        .movie-video {
+            width: 100%;
+            aspect-ratio: 16/9;
+            border: none;
+            display: none;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+            background-color: #000;
+            pointer-events: auto;
+        }
+        .movie-video.active {
+            display: block;
+        }
+        .movie-video::-webkit-media-controls-fullscreen-button {
+            display: none !important;
+        }
+        .movie-video::--webkit-media-controls-fullscreen-button {
+            display: none !important;
+        }
+        .close-player-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 32px;
+            height: 32px;
+            background-color: rgba(0,0,0,0.6);
+            color: #ffffff;
+            border: none;
+            border-radius: 50%;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            transition: all 0.2s;
+            backdrop-filter: blur(4px);
+        }
+        .close-player-btn:hover {
+            background-color: rgba(0,0,0,0.8);
+            transform: scale(1.1);
+        }
+        .login-hint {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background-color: rgba(0,0,0,0.7);
+            color: #ffffff;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            backdrop-filter: blur(4px);
+        }
+        .login-hint a {
+            color: #4da6ff;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+        .login-hint a:hover {
+            color: #66b3ff;
+        }
+        .fullscreen-toggle-btn {
+            position: absolute;
+            bottom: 80px;
+            right: 20px;
+            width: 44px;
+            height: 44px;
+            background: rgba(0,0,0,0.6);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            font-size: 20px;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 8002;
+            transition: all 0.2s;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+        .fullscreen-toggle-btn:hover {
+            background: rgba(0,0,0,0.8);
+            transform: scale(1.1);
+        }
+        .fullscreen-toggle-btn:active {
+            transform: scale(0.95);
+        }
+        /* 观影室全屏模式 */
+        #movie-screen.fullscreen {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            z-index: 8000 !important;
+            background: #000 !important;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+        #movie-screen.fullscreen .header,
+        #movie-screen.fullscreen .movie-search-container {
+            display: none !important;
+        }
+        #movie-screen.fullscreen .movie-player-container {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            background: #000 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border-radius: 0 !important;
+            z-index: 8001 !important;
+        }
+        #movie-screen.fullscreen video,
+        #movie-screen.fullscreen iframe {
+            width: 100vw !important;
+            height: 100vh !important;
+            max-width: 100vw !important;
+            max-height: 100vh !important;
+            object-fit: contain !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+        }
+        #movie-screen.fullscreen .icon-fullscreen-enter {
+            display: none !important;
+        }
+        #movie-screen.fullscreen .icon-fullscreen-exit {
+            display: block !important;
+        }
+        #movie-screen.fullscreen .close-player-btn {
+            top: env(safe-area-inset-top, 20px) !important;
+            right: 20px !important;
+            width: 44px !important;
+            height: 44px !important;
+            font-size: 24px !important;
+            z-index: 8003 !important;
+        }
+        #movie-screen.fullscreen .fullscreen-toggle-btn {
+            bottom: env(safe-area-inset-bottom, 20px) !important;
+            right: 20px !important;
+        }
+        body.fullscreen-active {
+            overflow: hidden !important;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
   </style>
   <link rel="apple-touch-icon" href="https://s3plus.meituan.net/opapisdk/op_ticket_885190757_1758510900942_qdqqd_djw0z2.jpeg">
   <link rel="manifest" href="manifest.json">
@@ -18195,9 +18462,9 @@ body.frame-mode-active .cphone-dock-container {
             <div id="page-3-app-container" style="display: flex; gap: 15px; width: 100%; height: 100%; padding: 0 10px;">
               <div class="left-column-stack" style="flex: 1; display: flex; flex-direction: column; gap: 15px;">
                  <div class="left-app-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
-                    <div class="desktop-app-icon">
-                        <div class="icon-bg-desktop"><img src="https://i.postimg.cc/HWf1JKzn/IMG-6435.jpg" alt="App"></div> 
-                        <span class="label">App 1</span>
+                    <div class="desktop-app-icon" onclick="showScreen('movie-screen')">
+                        <div class="icon-bg-desktop"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='55' height='55'%3E%3Crect width='55' height='55' fill='%23ff6b6b' rx='14'/%3E%3Ctext x='50%25' y='50%25' font-size='30' text-anchor='middle' dominant-baseline='middle'%3E🎬%3C/text%3E%3C/svg%3E" alt="观影室"></div> 
+                        <span class="label">观影室</span>
                     </div>
                     <div class="desktop-app-icon" onclick="openStickerPage()">
                         <div class="icon-bg-desktop"><img src="https://i.postimg.cc/HWf1JKzn/IMG-6435.jpg" alt="表情包"></div> 
@@ -18595,6 +18862,61 @@ body.frame-mode-active .cphone-dock-container {
       </div>
       <div id="preset-tabs"></div>
       <div id="preset-content-container"></div>
+    </div>
+    <div id="movie-screen" class="screen">
+      <div class="header"> <span class="back-btn" onclick="showScreen('home-screen')">‹</span> <span>观影室</span> <span style="width: 30px;"></span> </div>
+      <div class="movie-search-container">
+        <!-- AI陪看角色选择 -->
+        <div id="ai-character-selector" style="margin-top: 15px; padding: 15px; background-color: rgba(255,255,255,0.95); border-radius: 12px;">
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+            <label style="font-size: 14px; color: #666; flex-shrink: 0; font-weight: 600;">🤖 选择AI陪看角色：</label>
+            <select id="ai-watch-character" style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
+              <option value="">加载中...</option>
+            </select>
+          </div>
+          <div id="character-description" style="font-size: 12px; color: #999; padding: 8px; background-color: #f5f5f5; border-radius: 6px; margin-top: 8px; display: none;">
+            <!-- 角色描述将显示在这里 -->
+          </div>
+          <!-- 视觉调用间隔配置 -->
+          <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+              <label style="font-size: 13px; color: #666; flex-shrink: 0; font-weight: 600;">📸 视觉调用最小间隔：</label>
+              <input type="number" id="visual-interval-input" min="60" max="600" value="180" step="30" style="flex: 1; padding: 6px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px;">
+              <span style="font-size: 12px; color: #999;">秒</span>
+            </div>
+            <div style="font-size: 11px; color: #999; padding-left: 0;">
+              💡 视觉调用仅在满足时间间隔且触发条件时进行（暂停、提及画面、剧情转折）
+            </div>
+          </div>
+        </div>
+        
+        <!-- 自定义播放区域 -->
+        <div class="movie-search-box" style="margin-top: 10px;">
+          <input type="text" id="custom-movie-url" class="movie-search-input" placeholder="输入视频链接直接播放...">
+          <button id="play-custom-url-btn" class="movie-search-btn">播放</button>
+        </div>
+        <div style="margin-top: 10px; text-align: center;">
+            <input type="file" id="custom-movie-file" accept="video/*" style="display: none;">
+            <button id="upload-movie-btn" class="movie-search-btn" style="width: 100%; background-color: #6c757d; border-color: #6c757d;">📂 上传本地视频</button>
+        </div>
+      </div>
+      <div class="movie-player-container" id="movie-player-container">
+        <button class="close-player-btn" id="close-player-btn">×</button>
+        <button class="fullscreen-toggle-btn" id="fullscreen-toggle-btn" title="全屏">
+          <svg class="icon-fullscreen-enter" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+          </svg>
+          <svg class="icon-fullscreen-exit" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: none;">
+            <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/>
+          </svg>
+        </button>
+        <div class="login-hint" id="login-hint">
+          <span>💡 需要登录观看会员内容？</span>
+          <a href="https://v.qq.com" target="_blank" rel="noopener">前往登录</a>
+        </div>
+        <iframe id="movie-iframe" class="movie-iframe" allow="autoplay; clipboard-read; clipboard-write" referrerpolicy="no-referrer-when-downgrade"></iframe>
+        <video id="movie-video" class="movie-video" controls playsinline webkit-playsinline disablePictureInPicture controlsList="nodownload nofullscreen noremoteplayback"></video>
+      </div>
     </div>
     <div id="tutorial-screen" class="screen">
       <div class="header"> <span class="back-btn" onclick="showScreen('home-screen')">‹</span> <span data-lang-key="tutorialTitle">教程</span> <span style="width: 30px;"></span> </div>
@@ -22957,18 +23279,129 @@ function initLanguage() {
 })();
 
 
+// Service Worker 注册（内联方式，支持后台通知）
 if ('serviceWorker' in navigator) {
-
   window.addEventListener('load', () => {
+    const serviceWorkerCode = `
+// Service Worker for Background Notifications
+const CACHE_NAME = 'ephone-cache-v1';
 
-    navigator.serviceWorker.register('./sw.js')
+// 安装 Service Worker
+self.addEventListener('install', function(event) {
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then(function(cache) {
+        console.log('Service Worker: 缓存已打开');
+        return cache.addAll(['/']);
+      })
+  );
+  self.skipWaiting(); // 立即激活
+});
+
+// 激活 Service Worker
+self.addEventListener('activate', function(event) {
+  event.waitUntil(
+    caches.keys().then(function(cacheNames) {
+      return Promise.all(
+        cacheNames.map(function(cacheName) {
+          if (cacheName !== CACHE_NAME) {
+            console.log('Service Worker: 删除旧缓存', cacheName);
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    })
+  );
+  return self.clients.claim(); // 立即控制所有客户端
+});
+
+// 处理推送通知
+self.addEventListener('push', function(event) {
+  console.log('Service Worker: 收到推送通知', event);
+  
+  let data = {};
+  if (event.data) {
+    try {
+      data = event.data.json();
+    } catch (e) {
+      data = { title: '通知', body: event.data.text() || '您有新的消息' };
+    }
+  } else {
+    data = { title: '通知', body: '您有新的消息' };
+  }
+
+  const options = {
+    body: data.body || '您有新的消息',
+    icon: data.icon || 'https://s3plus.meituan.net/opapisdk/op_ticket_885190757_1758510900942_qdqqd_djw0z2.jpeg',
+    badge: 'https://s3plus.meituan.net/opapisdk/op_ticket_885190757_1758510900942_qdqqd_djw0z2.jpeg',
+    tag: data.tag || 'notification',
+    requireInteraction: data.requireInteraction || false,
+    data: data.data || {}
+  };
+
+  event.waitUntil(
+    self.registration.showNotification(data.title || '通知', options)
+  );
+});
+
+// 处理通知点击
+self.addEventListener('notificationclick', function(event) {
+  console.log('Service Worker: 通知被点击', event);
+  
+  event.notification.close();
+  
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(clientList) {
+      for (let i = 0; i < clientList.length; i++) {
+        const client = clientList[i];
+        if (client.url.indexOf(self.location.origin) === 0 && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      if (clients.openWindow) {
+        return clients.openWindow('/');
+      }
+    })
+  );
+});
+
+// 处理消息传递（从主线程发送通知）
+self.addEventListener('message', function(event) {
+  console.log('Service Worker: 收到消息', event.data);
+  
+  if (event.data && event.data.type === 'SHOW_NOTIFICATION') {
+    const notificationData = event.data.data;
+    const options = {
+      body: notificationData.body || '',
+      icon: notificationData.icon || 'https://s3plus.meituan.net/opapisdk/op_ticket_885190757_1758510900942_qdqqd_djw0z2.jpeg',
+      badge: 'https://s3plus.meituan.net/opapisdk/op_ticket_885190757_1758510900942_qdqqd_djw0z2.jpeg',
+      tag: notificationData.tag || 'chat-notification',
+      requireInteraction: false,
+      vibrate: [200, 100, 200],
+      data: notificationData.data || {}
+    };
+    
+    event.waitUntil(
+      self.registration.showNotification(notificationData.title || '新消息', options)
+    );
+  }
+});
+`;
+    
+    const blob = new Blob([serviceWorkerCode], { type: 'application/javascript' });
+    const serviceWorkerUrl = URL.createObjectURL(blob);
+    
+    navigator.serviceWorker.register(serviceWorkerUrl)
       .then(registration => {
-
-        console.log('ServiceWorker 注册成功，作用域为: ', registration.scope);
+        console.log('✅ Service Worker 注册成功:', registration.scope);
+        
+        // 监听来自 Service Worker 的消息
+        navigator.serviceWorker.addEventListener('message', event => {
+          console.log('收到 Service Worker 消息:', event.data);
+        });
       })
       .catch(error => {
-
-        console.log('ServiceWorker 注册失败: ', error);
+        console.error('❌ Service Worker 注册失败:', error);
       });
   });
 }
@@ -25993,6 +26426,23 @@ function initDatabase(userId) {
       document.getElementById('font-url-input').value = state.globalSettings.fontUrl || '';
       applyCustomFont(state.globalSettings.fontUrl || '', true);
     }
+    
+    // ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼ 观影室角色列表刷新 ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
+    // 当切换到观影室时，强制刷新角色列表
+    if (screenId === 'movie-screen') {
+        console.log("进入观影室，正在刷新角色列表...");
+        setTimeout(() => {
+            if (typeof window.loadCharacterList === 'function') {
+                window.loadCharacterList(); // 调用观影室模块暴露出来的加载函数
+            } else {
+                console.warn("未找到 loadCharacterList 函数，尝试再次延迟加载");
+                setTimeout(() => {
+                     if (typeof window.loadCharacterList === 'function') window.loadCharacterList();
+                }, 500);
+            }
+        }, 100); // 稍微延迟以确保数据已就绪
+    }
+    // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ 观影室角色列表刷新结束 ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
   }
   window.updateListenTogetherIconProxy = () => {};
 
@@ -28867,36 +29317,62 @@ async function saveNaiBinding() {
         avatarUrl = chat.settings.aiAvatar || chat.settings.groupAvatar || defaultAvatar;
     }
 
-    // ▼▼▼▼▼▼▼▼▼▼ 修改部分：尝试发送系统通知 ▼▼▼▼▼▼▼▼▼▼
-    // 如果浏览器支持通知，并且用户已授权，并且 (应用在后台 或者 这是一个强制测试)
+    // ▼▼▼▼▼▼▼▼▼▼ 修改部分：发送系统通知（支持锁屏和后台）▼▼▼▼▼▼▼▼▼▼
+    // 如果浏览器支持通知，并且用户已授权
     if ('Notification' in window && Notification.permission === 'granted') {
-        
-        // 只有当页面不可见(在后台)，或者是测试时，才发系统通知
-        // 这样防止用户在使用APP时，顶部既有APP内横幅，又有系统弹窗，体验不好
-        if (document.visibilityState === 'hidden' || isTest) {
-            try {
-                // 如果 ServiceWorker 已注册，尝试使用 SW 发送（支持更好的图标和操作）
-                navigator.serviceWorker.ready.then(registration => {
-                    registration.showNotification(titleText, {
-                        body: messageContent,
-                        icon: avatarUrl, // 尝试使用头像作为图标
-                        badge: 'https://s3plus.meituan.net/opapisdk/op_ticket_885190757_1758510900942_qdqqd_djw0z2.jpeg', // 小图标
-                        vibrate: [200, 100, 200],
-                        tag: 'ephone-msg'
-                    });
-                }).catch(() => {
-                    // 如果 SW 失败，回退到普通 Notification API
+        // 优先使用 Service Worker 发送通知（支持锁屏和后台）
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.ready.then(registration => {
+                // 直接使用 registration.showNotification（最可靠的方式）
+                registration.showNotification(titleText, {
+                    body: messageContent,
+                    icon: avatarUrl,
+                    badge: 'https://s3plus.meituan.net/opapisdk/op_ticket_885190757_1758510900942_qdqqd_djw0z2.jpeg',
+                    vibrate: [200, 100, 200],
+                    tag: chatId ? `chat-${chatId}` : 'ephone-msg',
+                    requireInteraction: false,
+                    data: { chatId: chatId }
+                }).catch(err => {
+                    console.warn('Service Worker 通知发送失败，尝试普通通知:', err);
+                    // 如果 Service Worker 失败，回退到普通 Notification API
+                    try {
+                        new Notification(titleText, {
+                            body: messageContent,
+                            icon: avatarUrl,
+                            tag: chatId ? `chat-${chatId}` : 'ephone-msg'
+                        });
+                    } catch (e) {
+                        console.error("系统通知发送失败", e);
+                    }
+                });
+            }).catch(() => {
+                // Service Worker 未就绪，使用普通 Notification API
+                try {
                     new Notification(titleText, {
                         body: messageContent,
-                        icon: avatarUrl
+                        icon: avatarUrl,
+                        tag: chatId ? `chat-${chatId}` : 'ephone-msg'
                     });
+                } catch (e) {
+                    console.warn("系统通知发送失败", e);
+                }
+            });
+        } else {
+            // 浏览器不支持 Service Worker，使用普通 Notification API
+            try {
+                new Notification(titleText, {
+                    body: messageContent,
+                    icon: avatarUrl,
+                    tag: chatId ? `chat-${chatId}` : 'ephone-msg'
                 });
-                
-                // 如果不是测试，发了系统通知就不发应用内横幅了，避免重复打扰
-                if (!isTest) return; 
             } catch (e) {
-                console.warn("系统通知发送失败，回退到应用内横幅", e);
+                console.warn("系统通知发送失败", e);
             }
+        }
+        
+        // 如果页面在后台或锁屏，只发系统通知，不发应用内横幅
+        if (document.visibilityState === 'hidden' || document.hidden) {
+            return;
         }
     }
 
@@ -69066,12 +69542,29 @@ if (enableNotifyBtn) {
     });
 }
 
-// 2. 测试系统通知
+// 2. 测试系统通知（5秒后发送）
 const testSystemNotifyBtn = document.getElementById('test-system-notify-btn');
 if (testSystemNotifyBtn) {
     testSystemNotifyBtn.addEventListener('click', () => {
-        // 调用通用通知函数，它会自动判断是否可以使用系统通知
-        showNotification(null, "这是一条系统级推送测试 🔔", true);
+        alert('点击确定后，请立即切换到其他应用或锁屏！\n\n5秒后会发送通知，测试后台通知功能是否正常。');
+        
+        console.log('🧪 后台通知测试：5秒倒计时开始');
+        
+        let countdown = 5;
+        const countdownInterval = setInterval(() => {
+            console.log(`⏰ 倒计时: ${countdown} 秒`);
+            countdown--;
+            
+            if (countdown < 0) {
+                clearInterval(countdownInterval);
+            }
+        }, 1000);
+        
+        setTimeout(() => {
+            console.log('📤 5秒已到，发送后台测试通知...');
+            // 调用通用通知函数，它会自动判断是否可以使用系统通知
+            showNotification(null, "这是一条系统级推送测试 🔔（5秒延迟）", true);
+        }, 5000);
     });
 }
 
@@ -77770,6 +78263,291 @@ async function saveSplitStickersToMyEmojis() {
     }
 }
 
+  </script>
+  <script>
+        // 观影室功能
+        (function() {
+            const playerContainer = document.getElementById('movie-player-container');
+            const movieIframe = document.getElementById('movie-iframe');
+            const movieVideo = document.getElementById('movie-video');
+            const closePlayerBtn = document.getElementById('close-player-btn');
+            
+            // 自定义播放控件
+            const customUrlInput = document.getElementById('custom-movie-url');
+            const playCustomBtn = document.getElementById('play-custom-url-btn');
+            const fileInput = document.getElementById('custom-movie-file');
+            const uploadBtn = document.getElementById('upload-movie-btn');
+
+            // 播放通用视频
+            function playMovie(url) {
+                if (!url) {
+                    return;
+                }
+                
+                // 隐藏旧版腾讯视频登录提示
+                const loginHint = document.getElementById('login-hint');
+                if (loginHint) loginHint.style.display = 'none';
+                
+                // 判断URL类型：blob URL（本地文件）使用video标签，其他使用iframe
+                const isBlobUrl = url.startsWith('blob:');
+                
+                if (isBlobUrl) {
+                    // 本地视频文件：使用video标签
+                    movieIframe.style.display = 'none';
+                    movieVideo.src = url;
+                    movieVideo.classList.add('active');
+                } else {
+                    // 在线视频：使用iframe
+                    movieVideo.classList.remove('active');
+                    movieVideo.src = '';
+                    movieIframe.style.display = 'block';
+                    movieIframe.src = url;
+                }
+                
+                // 显示播放器
+                playerContainer.classList.add('active');
+                
+                // 显示全屏按钮
+                const fullscreenBtn = document.getElementById('fullscreen-toggle-btn');
+                if (fullscreenBtn) {
+                    fullscreenBtn.style.display = 'flex';
+                }
+                
+                // 滚动到播放器位置
+                playerContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+
+            // 关闭播放器
+            function closePlayer() {
+                playerContainer.classList.remove('active');
+                movieIframe.src = '';
+                movieVideo.src = '';
+                movieVideo.classList.remove('active');
+                movieIframe.style.display = 'block';
+                
+                // 如果当前在全屏模式，也要退出全屏
+                const movieScreen = document.getElementById('movie-screen');
+                if (movieScreen && movieScreen.classList.contains('fullscreen')) {
+                    movieScreen.classList.remove('fullscreen');
+                    document.body.classList.remove('fullscreen-active');
+                }
+                
+                // 隐藏并重置全屏按钮
+                const fullscreenBtn = document.getElementById('fullscreen-toggle-btn');
+                if (fullscreenBtn) {
+                    fullscreenBtn.style.display = 'none';
+                    const enterIcon = fullscreenBtn.querySelector('.icon-fullscreen-enter');
+                    const exitIcon = fullscreenBtn.querySelector('.icon-fullscreen-exit');
+                    if (enterIcon) enterIcon.style.display = 'block';
+                    if (exitIcon) exitIcon.style.display = 'none';
+                    fullscreenBtn.title = '全屏';
+                }
+            }
+
+            // 禁用视频全屏功能
+            if (movieVideo) {
+                // 阻止双击全屏
+                movieVideo.addEventListener('dblclick', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return false;
+                });
+                
+                // 阻止右键菜单中的全屏选项
+                movieVideo.addEventListener('contextmenu', function(e) {
+                    e.preventDefault();
+                    return false;
+                });
+                
+                // 监听全屏请求并阻止
+                movieVideo.addEventListener('webkitbeginfullscreen', function(e) {
+                    e.preventDefault();
+                    return false;
+                });
+                
+                movieVideo.addEventListener('webkitendfullscreen', function(e) {
+                    e.preventDefault();
+                    return false;
+                });
+            }
+            
+            // 绑定事件
+            if (closePlayerBtn) {
+                closePlayerBtn.addEventListener('click', closePlayer);
+            }
+
+            // 新增：绑定自定义播放事件
+            if (playCustomBtn) {
+                playCustomBtn.addEventListener('click', function() {
+                    const url = customUrlInput.value.trim();
+                    if (url) {
+                        playMovie(url);
+                    } else {
+                        alert('请输入有效的视频链接');
+                    }
+                });
+            }
+
+            if (uploadBtn) {
+                uploadBtn.addEventListener('click', function() {
+                    if (fileInput) fileInput.click();
+                });
+            }
+
+            if (fileInput) {
+                fileInput.addEventListener('change', function(e) {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const url = URL.createObjectURL(file);
+                        playMovie(url);
+                        // 清空，允许重复选择
+                        fileInput.value = '';
+                    }
+                });
+            }
+
+            // 全屏切换功能
+            const fullscreenBtn = document.getElementById('fullscreen-toggle-btn');
+            if (fullscreenBtn) {
+                fullscreenBtn.addEventListener('click', function() {
+                    const movieScreen = document.getElementById('movie-screen');
+                    if (!movieScreen) return;
+                    
+                    if (movieScreen.classList.contains('fullscreen')) {
+                        // 退出全屏
+                        movieScreen.classList.remove('fullscreen');
+                        document.body.classList.remove('fullscreen-active');
+                        const enterIcon = fullscreenBtn.querySelector('.icon-fullscreen-enter');
+                        const exitIcon = fullscreenBtn.querySelector('.icon-fullscreen-exit');
+                        if (enterIcon) enterIcon.style.display = 'block';
+                        if (exitIcon) exitIcon.style.display = 'none';
+                        fullscreenBtn.title = '全屏';
+                    } else {
+                        // 进入全屏
+                        movieScreen.classList.add('fullscreen');
+                        document.body.classList.add('fullscreen-active');
+                        const enterIcon = fullscreenBtn.querySelector('.icon-fullscreen-enter');
+                        const exitIcon = fullscreenBtn.querySelector('.icon-fullscreen-exit');
+                        if (enterIcon) enterIcon.style.display = 'none';
+                        if (exitIcon) exitIcon.style.display = 'block';
+                        fullscreenBtn.title = '退出全屏';
+                    }
+                });
+            }
+
+            // 角色列表和角色信息存储
+            let characterList = [];
+            let characterProfiles = {};
+            const aiWatchCharacter = document.getElementById('ai-watch-character');
+
+            // 加载真实角色列表（按照烦.html的方式）
+            async function loadRealCharacterList() {
+                try {
+                    if (!aiWatchCharacter) {
+                        console.warn('观影室角色选择器未找到');
+                        return;
+                    }
+
+                    // 等待 state 加载
+                    let retry = 0;
+                    while ((!window.state || !window.state.chats) && retry < 20) {
+                        await new Promise(r => setTimeout(r, 100));
+                        retry++;
+                    }
+
+                    if (!window.state || !window.state.chats) {
+                        console.warn('state对象未加载');
+                        aiWatchCharacter.innerHTML = '<option value="">请等待数据加载...</option>';
+                        return;
+                    }
+
+                    const chats = Object.values(window.state.chats).filter(c => c && !c.isGroup);
+                    
+                    console.log('找到角色数量:', chats.length);
+                    
+                    if (chats.length === 0) {
+                        aiWatchCharacter.innerHTML = '<option value="">暂无角色，请先在聊天页面创建角色</option>';
+                        return;
+                    }
+
+                    aiWatchCharacter.innerHTML = '<option value="">请选择陪看角色...</option>';
+                    chats.forEach(chat => {
+                        const option = document.createElement('option');
+                        option.value = chat.id;
+                        const name = chat.name || chat.originalName || '未命名角色';
+                        option.textContent = name;
+                        aiWatchCharacter.appendChild(option);
+                    });
+
+                    // 如果之前有选中的，尝试恢复
+                    if (window.state && window.state.activeChatId && chats.some(c => c.id === window.state.activeChatId)) {
+                        aiWatchCharacter.value = window.state.activeChatId;
+                    } else if (chats.length > 0) {
+                        // 默认选择第一个
+                        aiWatchCharacter.value = chats[0].id;
+                    }
+                    
+                    // 更新角色描述
+                    updateCharacterDescription();
+                    
+                    console.log(`✅ 成功加载 ${chats.length} 个角色`);
+                } catch (e) {
+                    console.error('❌ 加载角色列表失败', e);
+                    if (aiWatchCharacter) {
+                        aiWatchCharacter.innerHTML = '<option value="">加载失败，请刷新页面</option>';
+                    }
+                }
+            }
+
+            // 更新角色描述
+            function updateCharacterDescription() {
+                const descEl = document.getElementById('character-description');
+                if (!descEl || !aiWatchCharacter) return;
+                
+                const selectedCharId = aiWatchCharacter.value;
+                if (!selectedCharId) {
+                    descEl.style.display = 'none';
+                    return;
+                }
+
+                // 从state.chats中获取角色信息
+                if (window.state && window.state.chats && window.state.chats[selectedCharId]) {
+                    const chat = window.state.chats[selectedCharId];
+                    const persona = (chat.settings && chat.settings.aiPersona) || '';
+                    const description = persona 
+                        ? (persona.length > 60 ? persona.substring(0, 60) + '...' : persona)
+                        : `${chat.name || chat.originalName || '角色'}（来自聊天页面）`;
+                    descEl.textContent = description;
+                    descEl.style.display = 'block';
+                } else {
+                    descEl.style.display = 'none';
+                }
+            }
+
+            // 监听角色选择变化
+            if (aiWatchCharacter) {
+                aiWatchCharacter.addEventListener('change', updateCharacterDescription);
+            }
+
+            // 将loadRealCharacterList暴露到window对象，以便外部调用
+            window.loadCharacterList = loadRealCharacterList;
+
+            // 监听进入观影室（使用MutationObserver，按照烦.html的方式）
+            const movieScreen = document.getElementById('movie-screen');
+            if (movieScreen) {
+                const observer = new MutationObserver((mutations) => {
+                    mutations.forEach((mutation) => {
+                        if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                            if (movieScreen.classList.contains('active')) {
+                                console.log('检测到进入观影室，加载角色列表...');
+                                loadRealCharacterList();
+                            }
+                        }
+                    });
+                });
+                observer.observe(movieScreen, { attributes: true });
+            }
+        })();
   </script>
 </body>
 </html>

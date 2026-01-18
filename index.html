@@ -22187,23 +22187,6 @@ body.frame-mode-active .cphone-dock-container {
                     使用 NovelAI 生成 LINE 风格的表情包。系统将使用内置提示词自动生成 3×3 网格布局的表情包。
                 </p>
                 
-                <!-- 参考图上传 -->
-                <div style="margin-bottom: 15px;">
-                    <label style="display: block; margin-bottom: 8px; font-size: 14px; font-weight: 500; color: var(--text-color);">参考图（可选）</label>
-                    <div style="position: relative; margin-bottom: 8px;">
-                        <div id="stickerRefImagePreview" style="width: 100%; max-width: 300px; height: 200px; border: 2px dashed #ddd; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: #f9f9f9; cursor: pointer; overflow: hidden;" onclick="document.getElementById('stickerRefImageInput').click()">
-                            <div id="stickerRefImagePlaceholder" style="text-align: center; color: #999;">
-                                <div style="font-size: 48px; margin-bottom: 10px;">📷</div>
-                                <div style="font-size: 14px;">点击上传参考图</div>
-                            </div>
-                            <img id="stickerRefImageDisplay" src="" alt="参考图" style="display: none; max-width: 100%; max-height: 100%; object-fit: contain;">
-                        </div>
-                        <input type="file" id="stickerRefImageInput" accept="image/*" style="display: none;" onchange="handleStickerRefImageUpload(event)">
-                        <button type="button" id="stickerRefImageClearBtn" onclick="clearStickerRefImage()" style="display: none; position: absolute; top: 5px; right: 5px; background: #ff3b30; color: white; border: none; border-radius: 50%; width: 24px; height: 24px; font-size: 14px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">✕</button>
-                    </div>
-                    <div style="font-size: 11px; color: #999;">提示：上传参考图可以帮助生成更符合要求的表情包</div>
-                </div>
-                
                 <!-- 指令要求输入 -->
                 <div style="margin-bottom: 15px;">
                     <label style="display: block; margin-bottom: 8px; font-size: 14px; font-weight: 500; color: var(--text-color);">指令要求</label>
@@ -24540,6 +24523,7 @@ document.getElementById('char-city-search-btn').addEventListener('click', async 
     ttsCache: new Map(),
     quickReplies: []
   };
+  window.state = state; // Expose state globally
 let memoryCache = []; // 缓存所有需要显示的记忆
 let memoryRenderCount = 0; // 当前已渲染数量
 let isLoadingMoreMemories = false; // 防抖锁
@@ -24808,7 +24792,7 @@ let selectedQuickReplies = new Set();
   let cphoneRenderedCount = 0;
   let cphoneActiveConversationType = null;
   let isLoadingMoreCphoneMessages = false;
-  let activeStickerCategoryId = 'all';
+  window.activeStickerCategoryId = 'all';
   let selectedMessages = new Set();
   let editingMemberId = null;
   let isAddingNpcToGroup = false;
@@ -30659,6 +30643,11 @@ Promise.all(imageLoadPromises).then(() => {
 
   
   async function renderStickerPanel(rerenderTabs = true) {
+    if (!state.userStickers) {
+      console.warn("User stickers not loaded yet.");
+      return;
+    }
+  window.renderStickerPanel = renderStickerPanel; // Expose global
     const grid = document.getElementById('sticker-grid');
     const tabsContainer = document.getElementById('sticker-category-tabs');
     const searchInput = document.getElementById('sticker-search-input');
@@ -32119,6 +32108,9 @@ https://xx.com/4.jpg 疑惑`;
 
     if (msg.role === 'assistant' && !isInitialLoad) {
       playNotificationSound();
+      // 发送推送通知（仅在后台时显示系统通知）
+      const notificationText = msg.text || msg.content || '发来了一条消息';
+      showNotification(chat.id, notificationText.substring(0, 50));
     }
 
     if (!isInitialLoad) {
@@ -77197,7 +77189,7 @@ async function callNovelAIAPI(userPrompt, rolePrompt = '', isTest = false, refer
     try {
         const apiKey = localStorage.getItem('novelaiApiKey') || '';
         const proxyUrl = localStorage.getItem('novelaiProxyUrl') || 'https://image.novelai.net/ai/generate-image';
-        let model = localStorage.getItem('novelaiModel') || 'nai-diffusion-4-5-full';
+        let model = localStorage.getItem('novelai-model') || 'nai-diffusion-4-5-full'; // 修复：使用正确的键名
         
         if (model === 'nai-diffusion-3-inpainting') model = 'nai-diffusion-3';
         
@@ -77252,7 +77244,7 @@ async function callNovelAIAPI(userPrompt, rolePrompt = '', isTest = false, refer
             if (referenceImage) {
                 const base64Data = referenceImage.includes(',') ? referenceImage.split(',')[1] : referenceImage;
                 requestBody.parameters.reference_image = base64Data;
-                requestBody.parameters.reference_strength = 0.6;
+                requestBody.parameters.reference_strength = options.referenceStrength || 0.6; // 使用自定义强度
                 requestBody.parameters.reference_information_extracted = 1;
             }
         } else {
@@ -77268,7 +77260,7 @@ async function callNovelAIAPI(userPrompt, rolePrompt = '', isTest = false, refer
             if (referenceImage) {
                 const base64Data = referenceImage.includes(',') ? referenceImage.split(',')[1] : referenceImage;
                 requestBody.parameters.reference_image = base64Data;
-                requestBody.parameters.reference_strength = 0.6;
+                requestBody.parameters.reference_strength = options.referenceStrength || 0.6; // 使用自定义强度
             }
         }
         
@@ -77278,6 +77270,28 @@ async function callNovelAIAPI(userPrompt, rolePrompt = '', isTest = false, refer
             body: JSON.stringify(requestBody)
         });
         
+        // --- 核心调试日志 ---
+        console.log(`[NovelAI] Response Status: ${response.status}`);
+        const responseClone = response.clone(); // 克隆一份用于读取文本，不影响后续处理
+        try {
+            const rawText = await responseClone.text();
+            console.log(`[NovelAI] Raw Response Preview (first 500 chars):`, rawText.substring(0, 500));
+            
+            // 检查是否包含具体的错误信息
+            if (!response.ok) {
+                try {
+                    const errJson = JSON.parse(rawText);
+                    if (errJson.message) return { success: false, error: `API Error: ${errJson.message}` };
+                    if (errJson.error) return { success: false, error: `API Error: ${errJson.error}` };
+                } catch (e) {
+                    return { success: false, error: `HTTP ${response.status}: ${rawText.substring(0, 100)}` };
+                }
+            }
+        } catch (e) {
+            console.warn("无法读取原始响应文本", e);
+        }
+        // --------------------
+        
         if (!response.ok) {
             const errorText = await response.text();
             return { success: false, error: `HTTP ${response.status}: ${errorText}` };
@@ -77286,33 +77300,88 @@ async function callNovelAIAPI(userPrompt, rolePrompt = '', isTest = false, refer
         const contentType = response.headers.get('content-type');
         let imageDataUrl = null;
         
-        if (contentType && contentType.includes('text/event-stream')) {
+        if (contentType && (contentType.includes('text/event-stream') || contentType.includes('application/x-ndjson'))) {
             const text = await response.text();
             const lines = text.trim().split('\n');
             let base64Data = null;
+            let imageUrl = null;
+
             for (let i = lines.length - 1; i >= 0; i--) {
                 const line = lines[i].trim();
                 if (line.startsWith('data: ') && line !== 'data: [DONE]') {
                     const dataContent = line.substring(6);
                     try {
                         const jsonData = JSON.parse(dataContent);
+                        // 1. 优先检查 URL
+                        if (jsonData.output && Array.isArray(jsonData.output) && jsonData.output[0] && jsonData.output[0].url) {
+                             imageUrl = jsonData.output[0].url;
+                             break;
+                        }
+                        if (jsonData.url) {
+                            imageUrl = jsonData.url;
+                            break;
+                        }
+                        
+                        // 2. 检查 base64
                         if (jsonData.event_type === 'final' && jsonData.image) { base64Data = jsonData.image; break; }
                         if (jsonData.data) { base64Data = jsonData.data; break; }
                         if (jsonData.image) { base64Data = jsonData.image; break; }
-                    } catch (e) { base64Data = dataContent; break; }
+                    } catch (e) { 
+                         // 尝试直接读取内容
+                         base64Data = dataContent; 
+                         break; 
+                    }
                 }
             }
-            if (!base64Data) return { success: false, error: '无法从 SSE 响应中提取图片数据' };
             
-            if (base64Data.startsWith('iVBOR') || base64Data.startsWith('/9j/')) {
-                imageDataUrl = `data:image/${base64Data.startsWith('iVBOR') ? 'png' : 'jpeg'};base64,${base64Data}`;
+            if (imageUrl) {
+                 imageDataUrl = imageUrl;
+            } else if (base64Data) {
+                 if (base64Data.startsWith('http')) {
+                    imageDataUrl = base64Data;
+                 } else if (base64Data.startsWith('iVBOR') || base64Data.startsWith('/9j/')) {
+                    imageDataUrl = `data:image/${base64Data.startsWith('iVBOR') ? 'png' : 'jpeg'};base64,${base64Data}`;
+                } else {
+                    try {
+                        const binaryString = atob(base64Data);
+                        const bytes = new Uint8Array(binaryString.length);
+                        for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
+                        imageDataUrl = await extractImageFromZip(new Blob([bytes]));
+                    } catch(e) {
+                         // 如果解压失败，可能是 raw base64
+                         imageDataUrl = `data:image/png;base64,${base64Data}`;
+                    }
+                }
             } else {
-                const binaryString = atob(base64Data);
-                const bytes = new Uint8Array(binaryString.length);
-                for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
-                imageDataUrl = await extractImageFromZip(new Blob([bytes]));
+                 return { success: false, error: '无法从 SSE 响应中提取图片数据或URL' };
             }
+
+        } else if (contentType && contentType.includes('application/json')) {
+             // 处理非 SSE 的 JSON 响应
+             const jsonData = await response.json();
+             if (jsonData.output && Array.isArray(jsonData.output) && jsonData.output[0] && jsonData.output[0].url) {
+                 imageDataUrl = jsonData.output[0].url;
+             } else if (jsonData.url) {
+                 imageDataUrl = jsonData.url;
+             } else {
+                 // 尝试查找 base64
+                 let base64Data = jsonData.image || jsonData.data;
+                 if (base64Data) {
+                    if (base64Data.startsWith('iVBOR') || base64Data.startsWith('/9j/')) {
+                        imageDataUrl = `data:image/${base64Data.startsWith('iVBOR') ? 'png' : 'jpeg'};base64,${base64Data}`;
+                    } else {
+                         // 假设是 zip base64
+                        const binaryString = atob(base64Data);
+                        const bytes = new Uint8Array(binaryString.length);
+                        for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
+                        imageDataUrl = await extractImageFromZip(new Blob([bytes]));
+                    }
+                 } else {
+                     return { success: false, error: '无法从 JSON 响应中提取图片数据或URL' };
+                 }
+             }
         } else {
+            // 默认为 Blob (ZIP)
             const zipBlob = await response.blob();
             imageDataUrl = await extractImageFromZip(zipBlob);
         }
@@ -77363,34 +77432,6 @@ async function extractImageFromZip(zipBlob) {
 
 const STICKER_BUILTIN_PROMPT = 'Q-style LINE sticker pack, hand-drawn texture, soft low-saturation macaron color palette, pure white background. Line features: Clear, smooth black outlines with uniform thickness and rounded edges. Expression design: 3×3 grid layout, 9 independent bust stickers with exaggerated, cute movements that match text labels exactly, covering daily high-frequency emotions (happy, surprised, speechless, sleepy, etc.). Text labels: Only use sharp, clear English text (e.g., "OK!", "NO!", "THANKS!", "SORRY!") with a round, cute font. Text must be edge-sharp, no blurring, no garbled characters, no jagged edges. Detail optimization: High contrast, distinct color layers, no noise, consistent healing art style, suitable for chat app stickers.';
 let currentStickerImageUrl = null;
-let currentStickerRefImage = null;
-
-function handleStickerRefImageUpload(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    if (!file.type.startsWith('image/')) { alert('请上传图片文件'); return; }
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        currentStickerRefImage = e.target.result;
-        document.getElementById('stickerRefImagePlaceholder').style.display = 'none';
-        const display = document.getElementById('stickerRefImageDisplay');
-        display.src = currentStickerRefImage;
-        display.style.display = 'block';
-        document.getElementById('stickerRefImageClearBtn').style.display = 'block';
-    };
-    reader.readAsDataURL(file);
-}
-
-function clearStickerRefImage() {
-    currentStickerRefImage = null;
-    document.getElementById('stickerRefImagePlaceholder').style.display = 'block';
-    const display = document.getElementById('stickerRefImageDisplay');
-    display.src = '';
-    display.style.display = 'none';
-    document.getElementById('stickerRefImageClearBtn').style.display = 'none';
-    document.getElementById('stickerRefImageInput').value = '';
-}
-
 async function generateSticker() {
     const btn = document.getElementById('generateStickerBtn');
     const btnText = document.getElementById('generateStickerBtnText');
@@ -77417,7 +77458,7 @@ async function generateSticker() {
     document.getElementById('stickerPreviewArea').style.display = 'none';
     
     try {
-        const result = await callNovelAIAPI(finalPrompt, '', true, currentStickerRefImage, {
+        const result = await callNovelAIAPI(finalPrompt, '', true, null, {
             skipSystemPrompt: true,
             extraNegativePrompt: extraNegative,
             size: '1024x1024'
@@ -77445,14 +77486,39 @@ async function generateSticker() {
     }
 }
 
-function saveSticker() {
+async function saveSticker() {
     if (!currentStickerImageUrl) { alert('没有可保存的表情包'); return; }
-    const emojis = getMyEmojis();
+    if (!db || !state) {
+        alert('数据库未就绪，请稍后重试');
+        return;
+    }
+
     const timestamp = new Date().toLocaleString('zh-CN');
     const emojiName = `表情包_${timestamp}`;
-    emojis.push({ name: emojiName, url: currentStickerImageUrl });
-    saveMyEmojis(emojis);
-    alert('表情包已保存到表情列表！');
+    
+    const newSticker = {
+        id: 'sticker_' + Date.now() + Math.random(),
+        url: currentStickerImageUrl,
+        name: emojiName,
+        categoryId: null
+    };
+
+    try {
+        await db.userStickers.add(newSticker);
+        
+        if (state.userStickers) {
+            state.userStickers.push(newSticker);
+        }
+        
+        if (typeof renderStickerPanel === 'function') {
+            renderStickerPanel();
+        }
+        
+        alert('表情包已保存到表情列表！');
+    } catch (e) {
+        console.error(e);
+        alert('保存失败：' + e.message);
+    }
 }
 
 function regenerateSticker() {
@@ -77598,11 +77664,13 @@ function addTextToSticker(index, text) {
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0);
         
-        const textHeight = 40;
+        // 放大字体区域
+        const textHeight = 60; // Increased from 40
         ctx.fillStyle = 'rgba(0,0,0,0)';
         ctx.clearRect(0, canvas.height - textHeight, canvas.width, textHeight);
         
-        ctx.font = 'bold 24px "Microsoft YaHei", "Heiti SC", sans-serif'; 
+        // 放大字体
+        ctx.font = 'bold 36px "Microsoft YaHei", "Heiti SC", sans-serif'; 
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         
@@ -77647,22 +77715,58 @@ function downloadAllSplitStickers() {
 
 async function saveSplitStickersToMyEmojis() {
     if (splitImages.length === 0) { alert('没有可保存的表情，请先拆分！'); return; }
+    
+    if (!db || !state) {
+        alert('数据库未就绪，请稍后重试');
+        return;
+    }
+
     const packNameInput = document.getElementById('stickerPackName');
     const packName = packNameInput.value.trim() || `表情包_${new Date().toLocaleString('zh-CN')}`;
     
-    const emojis = getMyEmojis();
-    splitImages.forEach((url, index) => {
-        emojis.push({
-            name: `${packName}_${index + 1}`,
-            url: url
-        });
-    });
-    
     try {
-        saveMyEmojis(emojis);
-        alert(`成功保存 ${splitImages.length} 个表情到“我的表情”！`);
+        // 1. 自动创建一个新分类
+        const newCategory = {
+            name: packName
+        };
+        // 保存分类到数据库，获取新 ID
+        const newCategoryId = await db.stickerCategories.add(newCategory);
+        
+        // 2. 准备表情数据，关联到新分类 ID
+        const newStickers = [];
+        for (let i = 0; i < splitImages.length; i++) {
+             const url = splitImages[i];
+             const newSticker = {
+                id: 'sticker_' + Date.now() + Math.random(),
+                url: url,
+                name: `${packName}_${i + 1}`,
+                categoryId: newCategoryId // 关键：使用新创建的分类ID
+            };
+            newStickers.push(newSticker);
+        }
+        
+        // 3. 批量保存表情到 IndexedDB
+        await db.userStickers.bulkAdd(newStickers);
+        
+        // 4. 更新 State (如果存在)
+        if (state.userStickers) {
+            state.userStickers.push(...newStickers);
+        }
+        
+        // 5. 自动切换到新分类并刷新 UI
+        if (typeof activeStickerCategoryId !== 'undefined') {
+            activeStickerCategoryId = newCategoryId;
+        }
+
+        if (typeof renderStickerPanel === 'function') {
+            await renderStickerPanel(); // 刷新面板
+        }
+        
+        alert(`成功创建分类“${packName}”并保存了 ${newStickers.length} 个表情！\n已自动切换到该分类。`);
+        
     } catch (error) {
-        alert('保存失败，可能存储空间不足。');
+        console.error(error);
+        alert('保存失败，可能是数据库错误: ' + error.message);
     }
 }
 

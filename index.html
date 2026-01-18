@@ -38193,6 +38193,7 @@ async function sendUserTransfer() {
 
     const playerWindow = document.querySelector('.music-player-window');
     const toggleBtn = document.getElementById('toggle-blur-btn');
+    let corsProxy = ""; // [修复] 将变量定义提升到函数作用域，供重试逻辑使用
 
     if (playerWindow) {
       playerWindow.style.setProperty('--music-bg-image', track.background ? `url(${track.background})` : 'none');
@@ -38234,7 +38235,7 @@ async function sendUserTransfer() {
     } else if (!track.isLocal) {
       // --- 【新增】尝试使用代理播放音频 (复用 NovelAI 的代理设置) ---
       const settings = getNovelAISettings(); // 获取设置
-      let corsProxy = settings.cors_proxy;
+      corsProxy = settings.cors_proxy; // [修复] 去掉 let，使用外层定义的变量
       
       // 如果选的是自定义 (即你的 CF Worker)
       if (corsProxy === 'custom') {
@@ -38262,6 +38263,17 @@ async function sendUserTransfer() {
     const playPromise = audioPlayer.play();
     if (playPromise !== undefined) {
       playPromise.catch(error => {
+        // --- 自动修复：如果代理播放失败，尝试直连 ---
+        if (corsProxy && corsProxy.trim() !== '' && !track.src.startsWith('data:') && audioPlayer.src.includes(encodeURIComponent(track.src))) {
+            console.warn(`代理播放失败 (${error.name})，尝试直连重试: ${track.name}`);
+            audioPlayer.src = track.src;
+            audioPlayer.play().catch(retryErr => {
+                console.error('直连重试也失败:', retryErr);
+            });
+            return; // 阻止后续报错
+        }
+        // ------------------------------------------
+
         if (error.name === 'NotAllowedError') {
           console.warn('Autoplay was prevented by the browser.');
           audioPlayer.pause();
@@ -70265,6 +70277,7 @@ if (Notification.permission === 'granted') {
 
 // ========== 后台保活系统结束 ==========
 
+/*
 // 2. 测试系统通知（5秒后发送，测试后台通知功能）
 const testSystemNotifyBtn = document.getElementById('test-system-notify-btn');
 if (testSystemNotifyBtn) {
@@ -70274,7 +70287,8 @@ if (testSystemNotifyBtn) {
             return;
         }
         
-        alert('点击确定后，请立即切换到其他应用或锁屏！\n\n5秒后会发送通知，测试后台通知功能是否正常。');
+        // 提示用户关闭弹窗后操作
+        alert('关闭此提示后，请立即切换到其他应用或锁屏！\n\n5秒后会发送通知，测试后台通知功能是否正常。');
         
         console.log('🧪 后台通知测试：5秒倒计时开始');
         
@@ -70305,49 +70319,16 @@ if (testSystemNotifyBtn) {
                         console.log('✅ 后台测试通知已通过Service Worker发送');
                     }).catch(err => {
                         console.warn('Service Worker通知失败，尝试普通通知:', err);
-                        // 回退到普通通知
-                        try {
-                            const notification = new Notification('后台通知测试', {
-                                body: '如果你在锁屏/其他应用看到这条通知，说明后台通知功能完全正常！🎉',
-                                tag: 'background-test',
-                                requireInteraction: false,
-                                silent: false
-                            });
-                            
-                            notification.onclick = function() {
-                                window.focus();
-                                notification.close();
-                            };
-                            
-                            setTimeout(() => notification.close(), 10000);
-                            console.log('✅ 后台测试通知已通过普通API发送');
-                        } catch (error) {
-                            console.error('❌ 发送测试通知失败:', error);
-                        }
+                        fallbackNotification();
                     });
                 }).catch(() => {
-                    // Service Worker未就绪，使用普通通知
-                    try {
-                        const notification = new Notification('后台通知测试', {
-                            body: '如果你在锁屏/其他应用看到这条通知，说明后台通知功能完全正常！🎉',
-                            tag: 'background-test',
-                            requireInteraction: false,
-                            silent: false
-                        });
-                        
-                        notification.onclick = function() {
-                            window.focus();
-                            notification.close();
-                        };
-                        
-                        setTimeout(() => notification.close(), 10000);
-                        console.log('✅ 后台测试通知已通过普通API发送');
-                    } catch (error) {
-                        console.error('❌ 发送测试通知失败:', error);
-                    }
+                    fallbackNotification();
                 });
             } else {
-                // 浏览器不支持Service Worker，使用普通通知
+                fallbackNotification();
+            }
+            
+            function fallbackNotification() {
                 try {
                     const notification = new Notification('后台通知测试', {
                         body: '如果你在锁屏/其他应用看到这条通知，说明后台通知功能完全正常！🎉',
@@ -70370,6 +70351,7 @@ if (testSystemNotifyBtn) {
         }, 5000);
     });
 }
+*/
 
 
 

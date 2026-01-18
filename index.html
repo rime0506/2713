@@ -18240,6 +18240,228 @@ body.frame-mode-active .cphone-dock-container {
             overflow: hidden !important;
         }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        /* Floating Chat Window Style */
+        #chat-interface-screen.floating-chat-window {
+            position: fixed !important;
+            top: 60px !important;
+            right: 10px !important;
+            bottom: auto !important; /* Allow resizing */
+            left: auto !important;
+            width: 340px !important;
+            height: 500px !important; /* Default height */
+            min-width: 250px !important;
+            min-height: 300px !important;
+            border-radius: 12px !important;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3) !important;
+            z-index: 10001 !important; /* Higher than full screen movie */
+            background-color: rgba(255, 255, 255, 0.95) !important;
+            backdrop-filter: blur(10px) !important;
+            
+            /* Resizable properties */
+            resize: both !important;
+            overflow: hidden !important; /* Contains resize handle */
+            display: flex !important;
+            flex-direction: column !important;
+        }
+        
+        #chat-interface-screen.floating-chat-window #chat-messages {
+            flex-grow: 1 !important;
+            height: auto !important;
+            overflow-y: auto !important;
+        }
+
+        #chat-interface-screen.floating-chat-window #chat-input-area {
+            flex-shrink: 0 !important;
+        }
+        
+        /* Dark mode support */
+        #phone-screen.dark-mode #chat-interface-screen.floating-chat-window {
+            background-color: rgba(30, 30, 30, 0.95) !important;
+            border: 1px solid rgba(255,255,255,0.1) !important;
+        }
+
+        /* Adjust header in floating mode */
+        #chat-interface-screen.floating-chat-window .header {
+            padding: 10px !important;
+            height: 40px !important;
+            border-radius: 12px 12px 0 0 !important;
+            cursor: move !important;
+            user-select: none !important;
+        }
+        
+        #chat-interface-screen.floating-chat-window .back-btn {
+            display: none !important; /* Hide back button in floating mode */
+        }
+        
+        /* 最小化状态 */
+        #chat-interface-screen.floating-chat-window.minimized {
+            display: none !important;
+        }
+        
+        /* 悬浮聊天按钮（可拖动） */
+        #floating-chat-toggle-btn {
+            position: fixed !important;
+            width: 56px !important;
+            height: 56px !important;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+            color: white !important;
+            border-radius: 50% !important;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3) !important;
+            z-index: 10000 !important;
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+            cursor: pointer !important;
+            font-size: 24px !important;
+            transition: transform 0.2s, box-shadow 0.2s !important;
+            user-select: none !important;
+            -webkit-user-select: none !important;
+            touch-action: none !important; /* Prevent scrolling when dragging */
+        }
+        
+        #floating-chat-toggle-btn:active {
+            transform: scale(0.95) !important;
+        }
+        
+        #floating-chat-toggle-btn.dragging {
+            opacity: 0.8 !important;
+            transform: scale(1.05) !important;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.4) !important;
+        }
+        
+        /* 按钮内的小红点（未读消息） */
+        #floating-chat-badge {
+            position: absolute !important;
+            top: -2px !important;
+            right: -2px !important;
+            background-color: #ff3b30 !important;
+            color: white !important;
+            font-size: 10px !important;
+            min-width: 18px !important;
+            height: 18px !important;
+            border-radius: 9px !important;
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+            padding: 0 4px !important;
+            border: 2px solid white !important;
+            font-weight: bold !important;
+        }
+        
+        /* 悬浮窗打开时按钮的样式变化 */
+        #floating-chat-toggle-btn.chat-open {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5253 100%) !important;
+            transform: rotate(45deg);
+        }
+        
+        #floating-chat-toggle-btn.chat-open i {
+            transform: rotate(-45deg); /* Keep icon upright if needed, or let it rotate to X */
+        }
+        
+        /* 在浮动聊天窗口内的modal需要更高z-index */
+        #chat-interface-screen.floating-chat-window .modal { z-index: 10000 !important; position: fixed !important; }
+        
+        /* 确保聊天窗口在全屏时始终可见 */
+        #chat-interface-screen.floating-chat-window {
+            z-index: 9999 !important; /* 最高优先级，在全屏之上 */
+            position: fixed !important;
+            pointer-events: auto !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            display: flex !important;
+        }
+        
+        /* 强制聊天窗口在任何screen之上 */
+        body #chat-interface-screen.floating-chat-window {
+            z-index: 9999 !important;
+        }
+        
+        /* 全屏时强制显示聊天窗口 */
+        #movie-screen.fullscreen ~ #chat-interface-screen.floating-chat-window,
+        body.fullscreen-active #chat-interface-screen.floating-chat-window {
+            z-index: 9999 !important;
+            display: flex !important;
+            visibility: visible !important;
+        }
+        
+        /* 悬浮小按钮（最小化时使用，保留兼容性） */
+        #floating-chat-mini-btn {
+            position: fixed !important;
+            width: 56px !important;
+            height: 56px !important;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+            color: white !important;
+            border-radius: 50% !important;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3) !important;
+            z-index: 10000 !important;
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+            cursor: pointer !important;
+            font-size: 24px !important;
+            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55) !important;
+            pointer-events: auto !important; /* 确保可点击 */
+        }
+        
+        #floating-chat-mini-btn:hover {
+            transform: scale(1.1) !important;
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6) !important;
+        }
+        
+        #floating-chat-mini-btn:active {
+            transform: scale(0.95) !important;
+        }
+
+        /* 最小化按钮 */
+        #floating-chat-minimize-btn {
+            position: absolute !important;
+            top: 5px !important;
+            right: 45px !important;
+            font-size: 20px !important;
+            cursor: pointer !important;
+            z-index: 10002 !important;
+            color: var(--text-primary) !important;
+            width: 30px !important;
+            height: 30px !important;
+            text-align: center !important;
+            line-height: 30px !important;
+            font-weight: bold !important;
+            transition: all 0.2s !important;
+            pointer-events: auto !important; /* 确保可点击 */
+            user-select: none !important;
+        }
+        
+        #floating-chat-minimize-btn:hover {
+            transform: scale(1.2) !important;
+            color: #667eea !important;
+        }
+        
+        #floating-chat-minimize-btn:active {
+            transform: scale(0.9) !important;
+        }
+        
+        /* 横屏模式优化 - 确保聊天窗口可见 */
+        @media (orientation: landscape) {
+            #chat-interface-screen.floating-chat-window {
+                /* 横屏时调整聊天窗口大小和位置 */
+                width: 300px !important;
+                max-width: 35vw !important;
+                height: 400px !important;
+                max-height: 80vh !important;
+                top: 10px !important;
+                right: 10px !important;
+                z-index: 9999 !important; /* 确保在最上层 */
+            }
+            
+            /* 全屏模式下的横屏优化 */
+            #movie-screen.fullscreen #chat-interface-screen.floating-chat-window {
+                z-index: 9999 !important;
+                position: fixed !important;
+                display: flex !important;
+                visibility: visible !important;
+                opacity: 1 !important;
+            }
+        }
   </style>
   <link rel="apple-touch-icon" href="https://s3plus.meituan.net/opapisdk/op_ticket_885190757_1758510900942_qdqqd_djw0z2.jpeg">
   <link rel="manifest" href="manifest.json">
@@ -18873,6 +19095,9 @@ body.frame-mode-active .cphone-dock-container {
             <select id="ai-watch-character" style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
               <option value="">加载中...</option>
             </select>
+            <button id="open-character-window-btn" style="padding: 8px 12px; background-color: #4CAF50; color: white; border: none; border-radius: 6px; font-size: 14px; cursor: pointer; white-space: nowrap; display: none;" title="打开角色小窗">
+              📱 打开角色小窗
+            </button>
           </div>
           <div id="character-description" style="font-size: 12px; color: #999; padding: 8px; background-color: #f5f5f5; border-radius: 6px; margin-top: 8px; display: none;">
             <!-- 角色描述将显示在这里 -->
@@ -30792,6 +31017,9 @@ Promise.all(imageLoadPromises).then(() => {
       isLoadingMoreMessages = false;
      
   }
+  
+  // Expose renderChatInterface to window for global access
+  window.renderChatInterface = renderChatInterface;
 
 
 
@@ -78844,11 +79072,13 @@ async function saveSplitStickersToMyEmojis() {
             // 更新角色描述
             function updateCharacterDescription() {
                 const descEl = document.getElementById('character-description');
-                if (!descEl || !aiWatchCharacter) return;
+                const openBtn = document.getElementById('open-character-window-btn');
+                if (!aiWatchCharacter) return;
                 
                 const selectedCharId = aiWatchCharacter.value;
                 if (!selectedCharId) {
-                    descEl.style.display = 'none';
+                    if (descEl) descEl.style.display = 'none';
+                    if (openBtn) openBtn.style.display = 'none';
                     return;
                 }
 
@@ -78859,16 +79089,38 @@ async function saveSplitStickersToMyEmojis() {
                     const description = persona 
                         ? (persona.length > 60 ? persona.substring(0, 60) + '...' : persona)
                         : `${chat.name || chat.originalName || '角色'}（来自聊天页面）`;
-                    descEl.textContent = description;
-                    descEl.style.display = 'block';
+                    if (descEl) {
+                        descEl.textContent = description;
+                        descEl.style.display = 'block';
+                    }
+                    // 显示打开角色小窗按钮
+                    if (openBtn) {
+                        openBtn.style.display = 'block';
+                    }
                 } else {
-                    descEl.style.display = 'none';
+                    if (descEl) descEl.style.display = 'none';
+                    if (openBtn) openBtn.style.display = 'none';
                 }
             }
 
             // 监听角色选择变化
             if (aiWatchCharacter) {
                 aiWatchCharacter.addEventListener('change', updateCharacterDescription);
+            }
+            
+            // 绑定打开角色小窗按钮事件
+            const openCharacterWindowBtn = document.getElementById('open-character-window-btn');
+            if (openCharacterWindowBtn) {
+                openCharacterWindowBtn.addEventListener('click', function() {
+                    const selectedCharId = aiWatchCharacter ? aiWatchCharacter.value : null;
+                    if (selectedCharId && typeof window.switchToCharacterPhone === 'function') {
+                        window.switchToCharacterPhone(selectedCharId);
+                    } else if (selectedCharId) {
+                        console.warn('switchToCharacterPhone函数未找到，请确保已加载角色手机功能');
+                    } else {
+                        console.warn('请先选择一个角色');
+                    }
+                });
             }
 
             // 将loadRealCharacterList暴露到window对象，以便外部调用
@@ -78890,6 +79142,390 @@ async function saveSplitStickersToMyEmojis() {
                 observer.observe(movieScreen, { attributes: true });
             }
         })();
+  </script>
+<script>
+    // 悬浮聊天窗口功能
+    (function() {
+        let floatingBtn = null;
+        let isDraggingBtn = false;
+        let btnDragStartX, btnDragStartY, btnStartX, btnStartY;
+        const chatScreen = document.getElementById('chat-interface-screen');
+        const characterSelector = document.getElementById('ai-watch-character');
+        
+        // 暴露给全局
+        window.toggleFloatingChat = toggleFloatingChat;
+        window.minimizeFloatingChat = minimizeFloatingChat;
+        window.restoreFloatingChat = restoreFloatingChat;
+
+        function createFloatingChatButton() {
+            if (document.getElementById('floating-chat-toggle-btn')) {
+                return document.getElementById('floating-chat-toggle-btn');
+            }
+            
+            floatingBtn = document.createElement('div');
+            floatingBtn.id = 'floating-chat-toggle-btn';
+            floatingBtn.innerHTML = '<i class="fas fa-comment-dots" style="font-style: normal;">💬</i>'; // 使用emoji作为图标
+            floatingBtn.title = '打开悬浮聊天';
+            
+            // 初始位置
+            floatingBtn.style.top = '100px';
+            floatingBtn.style.right = '20px';
+            
+            // 添加小红点（未读消息提示）
+            const badge = document.createElement('div');
+            badge.id = 'floating-chat-badge';
+            badge.style.display = 'none';
+            badge.innerText = '0';
+            floatingBtn.appendChild(badge);
+            
+            document.body.appendChild(floatingBtn);
+            
+            // 点击事件处理
+            floatingBtn.addEventListener('click', function(e) {
+                if (isDraggingBtn) {
+                    console.log('拖拽结束触发点击，忽略');
+                    return;
+                }
+                console.log('悬浮按钮被点击，切换聊天窗口');
+                toggleFloatingChat();
+            });
+            
+            // 添加拖拽功能
+            floatingBtn.addEventListener('mousedown', startBtnDrag);
+            floatingBtn.addEventListener('touchstart', startBtnDrag, { passive: false });
+            
+            console.log('✅ 悬浮聊天按钮创建完成');
+            return floatingBtn;
+        }
+
+        function startBtnDrag(e) {
+            // 阻止默认行为和冒泡
+            if (e.type === 'mousedown') e.preventDefault();
+            // e.stopPropagation();
+            
+            const touch = e.type === 'touchstart' ? e.touches[0] : e;
+            btnDragStartX = touch.clientX;
+            btnDragStartY = touch.clientY;
+            
+            const rect = floatingBtn.getBoundingClientRect();
+            btnStartX = rect.left;
+            btnStartY = rect.top;
+            
+            // 标记为可能拖拽
+            isDraggingBtn = false; 
+            
+            floatingBtn.classList.add('dragging');
+            
+            // 监听移动和结束事件
+            document.addEventListener('mousemove', onBtnDrag, { capture: true });
+            document.addEventListener('touchmove', onBtnDrag, { passive: false, capture: true });
+            document.addEventListener('mouseup', stopBtnDrag, { capture: true });
+            document.addEventListener('touchend', stopBtnDrag, { capture: true });
+        }
+
+        function onBtnDrag(e) {
+            const touch = e.type === 'touchmove' ? e.touches[0] : e;
+            const currentX = touch.clientX;
+            const currentY = touch.clientY;
+            
+            const deltaX = currentX - btnDragStartX;
+            const deltaY = currentY - btnDragStartY;
+            
+            // 如果移动距离超过5px，认为是拖拽
+            if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
+                isDraggingBtn = true;
+                // 拖拽时禁用过渡动画
+                floatingBtn.style.transition = 'none';
+            }
+            
+            if (isDraggingBtn) {
+                if (e.cancelable) e.preventDefault();
+                e.stopPropagation();
+
+                let newX = btnStartX + deltaX;
+                let newY = btnStartY + deltaY;
+                
+                // 边界限制
+                const maxX = window.innerWidth - floatingBtn.offsetWidth;
+                const maxY = window.innerHeight - floatingBtn.offsetHeight;
+                
+                newX = Math.max(0, Math.min(newX, maxX));
+                newY = Math.max(0, Math.min(newY, maxY));
+                
+                // 先清除right和bottom
+                floatingBtn.style.right = 'auto';
+                floatingBtn.style.bottom = 'auto';
+                // 再设置left和top
+                floatingBtn.style.left = newX + 'px';
+                floatingBtn.style.top = newY + 'px';
+            }
+        }
+
+        function stopBtnDrag(e) {
+            floatingBtn.classList.remove('dragging');
+            
+            // 恢复过渡动画
+            floatingBtn.style.transition = 'transform 0.2s, box-shadow 0.2s';
+            
+            // 移除事件监听
+            document.removeEventListener('mousemove', onBtnDrag, { capture: true });
+            document.removeEventListener('touchmove', onBtnDrag, { capture: true });
+            document.removeEventListener('mouseup', stopBtnDrag, { capture: true });
+            document.removeEventListener('touchend', stopBtnDrag, { capture: true });
+            
+            // 延迟重置isDraggingBtn，防止触发click
+            setTimeout(() => {
+                isDraggingBtn = false;
+            }, 50);
+        }
+
+        function toggleFloatingChat() {
+            // 确保悬浮按钮存在
+            if (!floatingBtn) {
+                floatingBtn = createFloatingChatButton();
+            }
+            
+            // 更新按钮状态
+            if (chatScreen.classList.contains('active') && chatScreen.classList.contains('floating-chat-window')) {
+                // 聊天窗口将关闭，移除chat-open状态
+                floatingBtn.classList.remove('chat-open');
+            } else {
+                // 聊天窗口将打开，添加chat-open状态
+                floatingBtn.classList.add('chat-open');
+            }
+            
+            if (chatScreen.classList.contains('active') && chatScreen.classList.contains('floating-chat-window')) {
+                // 关闭悬浮聊天
+                chatScreen.classList.remove('active');
+                chatScreen.classList.remove('floating-chat-window');
+                chatScreen.classList.remove('minimized');
+                chatScreen.style.display = 'none';
+                
+                const closeBtn = document.getElementById('floating-chat-close-btn');
+                if (closeBtn) closeBtn.remove();
+                
+                const minimizeBtn = document.getElementById('floating-chat-minimize-btn');
+                if (minimizeBtn) minimizeBtn.remove();
+                
+                const minBtn = document.getElementById('floating-chat-mini-btn');
+                if (minBtn) minBtn.remove();
+                
+            } else {
+                // 获取当前选中的角色
+                const selectedChatId = characterSelector ? characterSelector.value : null;
+                if (!selectedChatId) {
+                    alert('请先在下方选择一个陪看角色');
+                    return;
+                }
+
+                // 切换到选中的角色聊天
+                if (window.state) window.state.activeChatId = selectedChatId;
+                if (typeof renderChatInterface === 'function') {
+                    renderChatInterface(selectedChatId);
+                } else if (window.renderChatInterface) {
+                    window.renderChatInterface(selectedChatId);
+                }
+
+                // 打开悬浮聊天
+                chatScreen.classList.add('active');
+                chatScreen.classList.add('floating-chat-window');
+                chatScreen.style.display = 'flex';
+                chatScreen.style.zIndex = '9999';
+                
+                // 添加关闭按钮
+                if (!document.getElementById('floating-chat-close-btn')) {
+                    const closeBtn = document.createElement('div');
+                    closeBtn.id = 'floating-chat-close-btn';
+                    closeBtn.innerHTML = '×';
+                    closeBtn.title = '关闭';
+                    closeBtn.style.cssText = 'position:absolute; top:5px; left:10px; font-size:24px; cursor:pointer; z-index:10002; color:var(--text-primary); font-weight:bold; width:30px; height:30px; text-align:center; line-height:30px; user-select:none; pointer-events:auto;';
+                    
+                    // 添加点击事件，阻止冒泡
+                    closeBtn.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        toggleFloatingChat();
+                    });
+                    
+                    chatScreen.appendChild(closeBtn);
+                }
+                
+                // 添加最小化按钮
+                if (!document.getElementById('floating-chat-minimize-btn')) {
+                    const minimizeBtn = document.createElement('div');
+                    minimizeBtn.id = 'floating-chat-minimize-btn';
+                    minimizeBtn.innerHTML = '−';
+                    minimizeBtn.title = '最小化';
+                    // 样式已在CSS中定义，这里只补充必要的
+                    
+                    minimizeBtn.addEventListener('click', function(e) {
+                        e.stopPropagation(); 
+                        e.preventDefault(); 
+                        minimizeFloatingChat();
+                    });
+                    
+                    minimizeBtn.addEventListener('touchend', function(e) {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        minimizeFloatingChat();
+                    });
+                    
+                    chatScreen.appendChild(minimizeBtn);
+                }
+                
+                // 初始化拖拽功能
+                initDraggable();
+            }
+        }
+
+        function minimizeFloatingChat() {
+            // 添加最小化状态
+            chatScreen.classList.add('minimized');
+            
+            // 创建或获取悬浮小按钮
+            let minBtn = document.getElementById('floating-chat-mini-btn');
+            if (!minBtn) {
+                minBtn = document.createElement('div'); // 使用div模拟按钮
+                minBtn.id = 'floating-chat-mini-btn';
+                minBtn.innerHTML = '<i class="fas fa-comment-dots" style="font-style: normal;">💬</i>';
+                minBtn.onclick = restoreFloatingChat;
+                
+                document.body.appendChild(minBtn);
+            }
+            
+            // 获取窗口当前位置
+            const rect = chatScreen.getBoundingClientRect();
+            // 计算悬浮球位置（放在窗口右上角）
+            const btnLeft = rect.left + rect.width - 56;
+            const btnTop = rect.top;
+            
+            minBtn.style.left = btnLeft + 'px';
+            minBtn.style.top = btnTop + 'px';
+            minBtn.style.display = 'flex';
+        }
+
+        function restoreFloatingChat() {
+            const minBtn = document.getElementById('floating-chat-mini-btn');
+            if (minBtn) {
+                // 获取悬浮球位置
+                const rect = minBtn.getBoundingClientRect();
+                
+                // 将窗口位置设置为悬浮球位置
+                chatScreen.style.left = rect.left + 'px';
+                chatScreen.style.top = rect.top + 'px';
+                chatScreen.style.right = 'auto';
+                chatScreen.style.bottom = 'auto';
+                
+                minBtn.style.display = 'none';
+            }
+            
+            chatScreen.classList.remove('minimized');
+        }
+
+        // 窗口拖拽功能
+        let isWindowDragging = false;
+        let winDragStartX, winDragStartY, winStartX, winStartY;
+
+        function initDraggable() {
+            const header = chatScreen.querySelector('.header');
+            if (!header) return;
+
+            header.addEventListener('mousedown', startWindowDrag);
+            header.addEventListener('touchstart', startWindowDrag, { passive: false });
+        }
+
+        function startWindowDrag(e) {
+            const target = e.target;
+            if (target.id === 'floating-chat-close-btn' || 
+                target.id === 'floating-chat-minimize-btn' ||
+                target.closest('#floating-chat-close-btn') ||
+                target.closest('#floating-chat-minimize-btn')) {
+                return;
+            }
+
+            isWindowDragging = true;
+            const touch = e.type === 'touchstart' ? e.touches[0] : e;
+            winDragStartX = touch.clientX;
+            winDragStartY = touch.clientY;
+
+            const rect = chatScreen.getBoundingClientRect();
+            winStartX = rect.left;
+            winStartY = rect.top;
+
+            document.addEventListener('mousemove', onWindowDrag);
+            document.addEventListener('touchmove', onWindowDrag, { passive: false });
+            document.addEventListener('mouseup', stopWindowDrag);
+            document.addEventListener('touchend', stopWindowDrag);
+            
+            if (e.type !== 'touchstart') e.preventDefault();
+        }
+
+        function onWindowDrag(e) {
+            if (!isWindowDragging) return;
+            if (e.cancelable) e.preventDefault();
+
+            const touch = e.type === 'touchmove' ? e.touches[0] : e;
+            const deltaX = touch.clientX - winDragStartX;
+            const deltaY = touch.clientY - winDragStartY;
+
+            let newX = winStartX + deltaX;
+            let newY = winStartY + deltaY;
+
+            // 简单边界检查
+            const maxX = window.innerWidth - 50;
+            const maxY = window.innerHeight - 50;
+
+            newX = Math.max(-200, Math.min(newX, maxX));
+            newY = Math.max(0, Math.min(newY, maxY));
+
+            chatScreen.style.left = newX + 'px';
+            chatScreen.style.top = newY + 'px';
+            chatScreen.style.right = 'auto';
+            chatScreen.style.bottom = 'auto';
+        }
+
+        function stopWindowDrag() {
+            isWindowDragging = false;
+            document.removeEventListener('mousemove', onWindowDrag);
+            document.removeEventListener('touchmove', onWindowDrag);
+            document.removeEventListener('mouseup', stopWindowDrag);
+            document.removeEventListener('touchend', stopWindowDrag);
+        }
+
+        // 修改 open-character-window-btn 的点击事件
+        const openBtn = document.getElementById('open-character-window-btn');
+        if (openBtn) {
+            // 替换元素来清除旧的监听器
+            const newOpenBtn = openBtn.cloneNode(true);
+            openBtn.parentNode.replaceChild(newOpenBtn, openBtn);
+            
+            newOpenBtn.addEventListener('click', function() {
+                toggleFloatingChat();
+            });
+        }
+
+        // 监听进入观影室
+        const movieScreen = document.getElementById('movie-screen');
+        if (movieScreen) {
+            const observer = new MutationObserver((mutations) => {
+                mutations.forEach((mutation) => {
+                    if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                        if (movieScreen.classList.contains('active')) {
+                            createFloatingChatButton();
+                            if (floatingBtn) floatingBtn.style.display = 'flex';
+                        } else {
+                            if (floatingBtn) floatingBtn.style.display = 'none';
+                            // 离开时关闭悬浮窗
+                            if (chatScreen.classList.contains('floating-chat-window')) {
+                                toggleFloatingChat(); 
+                            }
+                        }
+                    }
+                });
+            });
+            observer.observe(movieScreen, { attributes: true });
+        }
+    })();
   </script>
 </body>
 </html>

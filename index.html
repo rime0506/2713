@@ -20617,7 +20617,7 @@ body.frame-mode-active .cphone-dock-container {
         </div>
         
         <!-- 隐藏的video和canvas用于摄像头 -->
-        <video id="wechat-camera-video" style="display: none;" autoplay playsinline></video>
+        <video id="wechat-camera-video" style="position: absolute; opacity: 0; pointer-events: none; width: 320px; height: 240px;" autoplay playsinline muted></video>
         <canvas id="wechat-camera-canvas" style="display: none;"></canvas>
       </div>
     </div>
@@ -24502,13 +24502,13 @@ document.addEventListener('DOMContentLoaded', () => {
    });
  }
 
- // 摄像头功能
- let cameraStream = null;
- let isCameraActive = false;
+ // 摄像头功能（全局变量）
+ window.cameraStream = null;
+ window.isCameraActive = false;
 
  if (wechatCameraBtn) {
    wechatCameraBtn.addEventListener('click', async () => {
-     if (!isCameraActive) {
+     if (!window.isCameraActive) {
        // 打开摄像头
        try {
          const stream = await navigator.mediaDevices.getUserMedia({ 
@@ -24518,15 +24518,30 @@ document.addEventListener('DOMContentLoaded', () => {
            } 
          });
          
-         cameraStream = stream;
+         window.cameraStream = stream;
          const video = document.getElementById('wechat-camera-video');
          video.srcObject = stream;
          
          // 等待视频加载
-         await new Promise(resolve => {
+         await new Promise((resolve, reject) => {
+           const timeout = setTimeout(() => {
+             console.error('❌ 视频加载超时');
+             reject(new Error('视频加载超时'));
+           }, 5000);
+           
            video.onloadedmetadata = () => {
-             video.play();
-             resolve();
+             clearTimeout(timeout);
+             console.log('✅ 视频元数据已加载');
+             console.log('   videoWidth:', video.videoWidth);
+             console.log('   videoHeight:', video.videoHeight);
+             console.log('   readyState:', video.readyState);
+             video.play().then(() => {
+               console.log('✅ 视频开始播放');
+               resolve();
+             }).catch(err => {
+               console.error('❌ 视频播放失败:', err);
+               resolve(); // 仍然继续
+             });
            };
          });
          
@@ -24534,6 +24549,7 @@ document.addEventListener('DOMContentLoaded', () => {
          const wechatMyImage = document.getElementById('wechat-my-video-image');
          if (wechatMyImage) {
            wechatMyImage.style.display = 'none';
+           console.log('✅ 隐藏静态图片');
          }
          
          const wechatSmallVideo = document.getElementById('wechat-small-video');
@@ -24550,13 +24566,26 @@ document.addEventListener('DOMContentLoaded', () => {
            video.style.width = '100%';
            video.style.height = '100%';
            video.style.objectFit = 'cover';
+           video.style.opacity = '1'; // 确保可见
+           video.style.pointerEvents = 'auto';
            video.style.transform = 'scaleX(-1)'; // 镜像显示
            wechatSmallVideo.appendChild(video);
+           console.log('✅ video已移动到小窗口');
+           
+           // 再次检查
+           setTimeout(() => {
+             console.log('🔍 延迟检查视频状态:');
+             console.log('   videoWidth:', video.videoWidth);
+             console.log('   videoHeight:', video.videoHeight);
+             console.log('   readyState:', video.readyState);
+             console.log('   paused:', video.paused);
+             console.log('   video在DOM中:', document.body.contains(video));
+           }, 1000);
          }
          
          // 激活按钮
          wechatCameraBtn.classList.add('active');
-         isCameraActive = true;
+         window.isCameraActive = true;
          
          console.log('✅ 摄像头已开启，发送消息时会截取当前画面发送给AI');
          
@@ -24573,8 +24602,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
  // 立即截取当前画面
  window.captureCurrentFrame = function() {
-   if (!isCameraActive || !cameraStream) {
-     console.log('⚠️ 摄像头未激活');
+   if (!window.isCameraActive || !window.cameraStream) {
+     console.log('⚠️ 摄像头未激活, isCameraActive:', window.isCameraActive, 'cameraStream:', window.cameraStream);
      return null;
    }
    
@@ -24586,6 +24615,12 @@ document.addEventListener('DOMContentLoaded', () => {
      return null;
    }
    
+   // 检查video是否真的在播放
+   if (video.readyState < 2) {
+     console.error('❌ 视频未就绪，readyState:', video.readyState);
+     return null;
+   }
+   
    const ctx = canvas.getContext('2d');
    
    // 设置canvas尺寸
@@ -24593,11 +24628,15 @@ document.addEventListener('DOMContentLoaded', () => {
    canvas.height = video.videoHeight;
    
    if (canvas.width === 0 || canvas.height === 0) {
-     console.error('❌ 视频尺寸为0，可能还未加载');
+     console.error('❌ 视频尺寸为0，videoWidth:', video.videoWidth, 'videoHeight:', video.videoHeight);
+     console.error('   video.readyState:', video.readyState);
+     console.error('   video.paused:', video.paused);
+     console.error('   video.srcObject:', video.srcObject);
      return null;
    }
    
    console.log('📸 截取当前画面，视频尺寸:', video.videoWidth, 'x', video.videoHeight);
+   console.log('   video 状态: readyState=' + video.readyState + ', paused=' + video.paused);
    
    // 绘制当前帧
    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
@@ -24607,6 +24646,11 @@ document.addEventListener('DOMContentLoaded', () => {
    
    console.log('✅ 截图完成，数据大小:', (imageData.length / 1024).toFixed(2), 'KB');
    
+   // 如果图片太小（小于20KB），可能是黑屏
+   if (imageData.length < 20000) {
+     console.warn('⚠️ 警告：截图数据太小（', (imageData.length / 1024).toFixed(2), 'KB），可能是黑屏！');
+   }
+   
    return {
      imageData: imageData,
      timestamp: Date.now()
@@ -24615,21 +24659,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
  // 停止摄像头
  function stopCamera() {
-   if (cameraStream) {
-     cameraStream.getTracks().forEach(track => track.stop());
-     cameraStream = null;
+   console.log('🛑 正在关闭摄像头...');
+   
+   if (window.cameraStream) {
+     window.cameraStream.getTracks().forEach(track => track.stop());
+     window.cameraStream = null;
+     console.log('✅ 媒体流已停止');
    }
    
    const video = document.getElementById('wechat-camera-video');
    if (video) {
      video.srcObject = null;
-     video.style.display = 'none';
+     video.pause();
      
      // 从小窗口移除视频元素
      if (video.parentElement && video.parentElement.id === 'wechat-small-video') {
        video.remove();
-       // 重新添加到body中以便下次使用
-       document.body.appendChild(video);
+       console.log('✅ video已从小窗口移除');
+     }
+     
+     // 重置video样式并隐藏
+     video.style.position = 'absolute';
+     video.style.opacity = '0';
+     video.style.pointerEvents = 'none';
+     video.style.width = '320px';
+     video.style.height = '240px';
+     video.style.display = 'block';
+     
+     // 重新添加到视频通话屏幕中
+     const videoCallScreen = document.getElementById('video-call-screen');
+     if (videoCallScreen && !video.parentElement) {
+       videoCallScreen.appendChild(video);
+       console.log('✅ video已重新添加到video-call-screen');
      }
    }
    
@@ -24637,6 +24698,7 @@ document.addEventListener('DOMContentLoaded', () => {
    const wechatMyImage = document.getElementById('wechat-my-video-image');
    if (wechatMyImage) {
      wechatMyImage.style.display = 'block';
+     console.log('✅ 静态图片已恢复显示');
    }
    
    const wechatCameraBtn = document.getElementById('wechat-camera-btn');
@@ -24644,8 +24706,8 @@ document.addEventListener('DOMContentLoaded', () => {
      wechatCameraBtn.classList.remove('active');
    }
    
-   isCameraActive = false;
-   console.log('📷 摄像头已关闭，已清空未使用的截图');
+   window.isCameraActive = false;
+   console.log('📷 摄像头已关闭');
  }
 
  // 挂断电话时自动关闭摄像头
@@ -24890,6 +24952,11 @@ document.getElementById('char-city-search-btn').addEventListener('click', async 
               const currentImageData = part.image_url.url;
               const base64Data = currentImageData.split(',')[1];
               const mimeTypeMatch = currentImageData.match(/^data:(.*);base64/);
+              console.log('🔄 Gemini图片转换:', {
+                '图片URL长度': currentImageData.length,
+                '匹配到的MIME类型': mimeTypeMatch ? mimeTypeMatch[1] : 'null',
+                'base64数据长度': base64Data ? base64Data.length : 0
+              });
               if (mimeTypeMatch && base64Data) {
                 parts.push({
                   inline_data: {
@@ -24897,6 +24964,9 @@ document.getElementById('char-city-search-btn').addEventListener('click', async 
                     data: base64Data
                   }
                 });
+                console.log('✅ 图片已转换为Gemini格式');
+              } else {
+                console.error('❌ 图片转换失败：无法提取base64数据或MIME类型');
               }
             }
           });
@@ -43878,8 +43948,15 @@ ${linkedContents}
       });
       
       // 如果摄像头开启，截取当前画面
+      console.log('🔍 检查摄像头状态...');
+      console.log('  - captureCurrentFrame函数存在:', typeof window.captureCurrentFrame === 'function');
+      console.log('  - window.isCameraActive:', window.isCameraActive);
+      
       if (typeof window.captureCurrentFrame === 'function') {
+        console.log('📸 尝试截取摄像头画面...');
         const frame = window.captureCurrentFrame();
+        
+        console.log('📸 截取结果:', frame ? '成功' : '失败');
         
         if (frame) {
           // 添加系统提示和截图
@@ -43963,6 +44040,9 @@ ${linkedContents}
         // 如果有图片，添加图片内容（支持视觉模型）
         if (h.image) {
           console.log('🖼️ 发现带图片的消息:', h.content.substring(0, 50));
+          console.log('  - 图片数据长度:', h.image.length);
+          console.log('  - 图片数据前50字符:', h.image.substring(0, 50));
+          console.log('  - 当前 content 是数组?', Array.isArray(msg.content));
           
           if (Array.isArray(msg.content)) {
             msg.content.push({
@@ -43976,7 +44056,12 @@ ${linkedContents}
             ];
           }
           
-          console.log('✅ 图片已添加到API请求中，格式:', msg.content);
+          console.log('✅ 图片已添加到API请求中');
+          console.log('  - msg.content 是数组?', Array.isArray(msg.content));
+          console.log('  - msg.content.length:', msg.content.length);
+          msg.content.forEach((part, i) => {
+            console.log(`  - 部分 ${i}: type=${part.type}, ${part.type === 'image_url' ? '图片URL长度=' + part.image_url.url.length : '文本长度=' + (part.text?.length || 0)}`);
+          });
         }
         
         return msg;
@@ -43997,9 +44082,34 @@ ${linkedContents}
       });
     }
 
+    // 打印完整的messagesForApi，检查图片
+    console.log('==================== API请求详情 ====================');
+    console.log('📊 消息总数:', messagesForApi.length);
+    messagesForApi.forEach((msg, index) => {
+      console.log(`\n消息 ${index}:`);
+      console.log('  角色:', msg.role);
+      if (Array.isArray(msg.content)) {
+        console.log('  内容类型: 多媒体消息（包含图片）');
+        msg.content.forEach((part, partIndex) => {
+          console.log(`    部分 ${partIndex}:`, part.type);
+          if (part.type === 'image_url') {
+            console.log('      图片URL长度:', part.image_url.url.length);
+            console.log('      图片URL前缀:', part.image_url.url.substring(0, 50));
+          }
+        });
+      } else {
+        console.log('  内容:', typeof msg.content === 'string' ? msg.content.substring(0, 100) : msg.content);
+      }
+    });
+    console.log('====================================================\n');
+
     try {
       let isGemini = proxyUrl === GEMINI_API_URL;
-      let geminiConfig = toGeminiRequestData(model, apiKey, inCallPrompt, messagesForApi)
+      
+      // 对于 Gemini，需要过滤掉第一条 system 消息（因为已经通过 systemInstruction 传递了）
+      const messagesForGemini = messagesForApi.filter((msg, index) => !(index === 0 && msg.role === 'system'));
+      
+      let geminiConfig = toGeminiRequestData(model, apiKey, inCallPrompt, messagesForGemini)
       const response = isGemini ? await fetch(geminiConfig.url, geminiConfig.data) : await fetch(`${proxyUrl}/v1/chat/completions`, {
         method: 'POST',
         headers: {

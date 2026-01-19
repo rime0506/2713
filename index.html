@@ -25718,6 +25718,10 @@ async function silentlyUpdateDbUrl(table, recordId, pathString, base64ToFind, na
     gridEl: null
   };
   const audioPlayer = document.getElementById('audio-player');
+  // 设置跨域属性以支持外部URL播放
+  if (audioPlayer) {
+    audioPlayer.crossOrigin = 'anonymous';
+  }
  // 变量声明区域
 let isQuickReplyManagementMode = false;
 let selectedQuickReplies = new Set();
@@ -38452,6 +38456,30 @@ async function sendUserTransfer() {
   async function addSongFromURL() {
     const url = await showCustomPrompt("添加网络歌曲", "请输入歌曲的URL", "", "url");
     if (!url) return;
+    
+    // URL格式验证
+    const trimmedUrl = url.trim();
+    if (!trimmedUrl.startsWith('http://') && !trimmedUrl.startsWith('https://') && !trimmedUrl.startsWith('data:')) {
+      await showCustomAlert("错误", "URL必须以 http:// 或 https:// 开头");
+      return;
+    }
+    
+    // 音频格式验证（可选，但建议）
+    const audioExtensions = ['.mp3', '.wav', '.ogg', '.m4a', '.aac', '.flac', '.webm'];
+    const hasAudioExtension = audioExtensions.some(ext => trimmedUrl.toLowerCase().includes(ext)) || 
+                              trimmedUrl.startsWith('data:audio');
+    
+    if (!hasAudioExtension && !trimmedUrl.includes('?')) {
+      const confirm = await showChoiceModal("提示", [{
+        text: '继续添加（可能是音频流URL）',
+        value: 'continue'
+      }, {
+        text: '取消',
+        value: 'cancel'
+      }]);
+      if (confirm !== 'continue') return;
+    }
+    
     const name = await showCustomPrompt("歌曲信息", "请输入歌名");
     if (!name) return;
     const artist = await showCustomPrompt("歌曲信息", "请输入歌手名");
@@ -38459,7 +38487,7 @@ async function sendUserTransfer() {
     musicState.playlist.push({
       name,
       artist,
-      src: url,
+      src: trimmedUrl,
       isLocal: false
     });
     await saveGlobalPlaylist();
@@ -38553,33 +38581,90 @@ async function sendUserTransfer() {
     } else if (track.isLocal && track.src instanceof Blob) {
       audioPlayer.src = URL.createObjectURL(track.src);
     } else if (!track.isLocal) {
-      // --- 【新增】尝试使用代理播放音频 (复用 NovelAI 的代理设置) ---
-      const settings = getNovelAISettings(); // 获取设置
-      let corsProxy = settings.cors_proxy;
+      // URL格式验证
+      if (!track.src || (typeof track.src === 'string' && !track.src.trim())) {
+        console.error('无效的音频URL:', track);
+        await showCustomAlert("错误", `歌曲《${track.name}》的URL无效`);
+        return;
+      }
       
-      // 如果选的是自定义 (即你的 CF Worker)
-      if (corsProxy === 'custom') {
-          corsProxy = settings.custom_proxy_url || '';
-      }
-
-      // 只有当存在代理地址，且链接不是 base64 (data:) 时才使用代理
-      if (corsProxy && corsProxy.trim() !== '' && !track.src.startsWith('data:')) {
-          // 使用 encodeURIComponent 可以防止 URL 中的特殊字符导致代理解析错误
-          // 如果你的 Worker 是直接拼接形式 (比如 https://worker.dev/https://catbox...), 这样通常也没问题
-          const proxiedUrl = corsProxy + encodeURIComponent(track.src);
-          console.log(`[音乐播放] 使用代理加载: ${track.name}`);
-          audioPlayer.src = proxiedUrl;
+      const audioUrl = typeof track.src === 'string' ? track.src.trim() : track.src;
+      
+      // 处理data: URL（base64音频）
+      if (audioUrl.startsWith('data:')) {
+        audioPlayer.src = audioUrl;
+        audioPlayer.crossOrigin = null; // data URL不需要跨域
+        console.log(`[音乐播放] 加载Base64音频: ${track.name}`);
+        audioPlayer.load();
       } else {
-          // 没有配置代理，直接直连
-          audioPlayer.src = track.src;
+        // 验证URL格式
+        if (!audioUrl.startsWith('http://') && !audioUrl.startsWith('https://')) {
+          console.error('无效的URL格式:', audioUrl);
+          await showCustomAlert("错误", `歌曲《${track.name}》的URL格式不正确，必须以http://或https://开头`);
+          return;
+        }
+        
+        // 直接播放（类似喵呜34.html的方式，不默认使用代理）
+        // 设置跨域属性
+        audioPlayer.crossOrigin = 'anonymous';
+        
+        // 直接使用原始URL（大多数服务器都支持CORS）
+        console.log(`[音乐播放] 直接加载: ${track.name}`, audioUrl);
+        audioPlayer.src = audioUrl;
+        // 显式调用load()，确保音频开始加载
+        audioPlayer.load();
       }
-      // -------------------------------------------------------
       
     } else {
       console.error('本地歌曲源错误:', track);
       return;
     }
 
+    // 添加错误处理监听器（仅对URL音乐）
+    const handleAudioError = async (e) => {
+      const error = audioPlayer.error;
+      if (error) {
+        let errorMessage = `无法播放歌曲《${track.name}》`;
+        switch (error.code) {
+          case error.MEDIA_ERR_ABORTED:
+            errorMessage += ': 播放被中止';
+            break;
+          case error.MEDIA_ERR_NETWORK:
+            errorMessage += ': 网络错误，请检查网络连接或URL是否有效';
+            break;
+          case error.MEDIA_ERR_DECODE:
+            errorMessage += ': 音频解码错误，可能是不支持的格式';
+            break;
+          case error.MEDIA_ERR_SRC_NOT_SUPPORTED:
+            errorMessage += ': 不支持的音频格式或URL无法访问';
+            break;
+          default:
+            errorMessage += ': 未知错误';
+        }
+        
+        // 如果是跨域错误，提供提示
+        if (track.src && typeof track.src === 'string' && 
+            (track.src.startsWith('http://') || track.src.startsWith('https://'))) {
+          errorMessage += '\n\n提示：如果遇到跨域问题，可以尝试：\n1. 检查URL是否可访问\n2. 确认服务器支持CORS\n3. 在NovelAI设置中配置CORS代理';
+        }
+        
+        console.error('[音乐播放错误]', errorMessage, error);
+        await showCustomAlert("播放错误", errorMessage);
+      }
+      
+      // 移除监听器，避免重复触发
+      audioPlayer.removeEventListener('error', handleAudioError);
+    };
+    
+    // 添加加载状态监听
+    const handleAudioCanPlay = () => {
+      audioPlayer.removeEventListener('canplay', handleAudioCanPlay);
+      console.log(`[音乐播放] 音频加载成功: ${track.name}`);
+    };
+    
+    audioPlayer.addEventListener('error', handleAudioError);
+    audioPlayer.addEventListener('canplay', handleAudioCanPlay);
+    
     const playPromise = audioPlayer.play();
     if (playPromise !== undefined) {
       playPromise.catch(error => {
@@ -38589,6 +38674,10 @@ async function sendUserTransfer() {
           
         } else if (error.name !== 'AbortError') {
           console.error('Playback error:', error);
+          // 显示用户友好的错误提示
+          if (!track.isLocal) {
+            showCustomAlert("播放错误", `无法播放《${track.name}》：${error.message || '未知错误'}\n\n如果这是跨域问题，请在设置中配置CORS代理`);
+          }
         }
       });
     }

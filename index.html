@@ -23520,6 +23520,7 @@ self.addEventListener('install', function(event) {
         return cache.addAll(['/']);
       })
   );
+  self.skipWaiting(); // 立即激活
 });
 
 // 激活 Service Worker
@@ -23536,6 +23537,7 @@ self.addEventListener('activate', function(event) {
       );
     })
   );
+  return self.clients.claim(); // 立即控制所有客户端
 });
 
 // 处理推送通知
@@ -23571,18 +23573,39 @@ self.addEventListener('push', function(event) {
 self.addEventListener('notificationclick', function(event) {
   console.log('Service Worker: 通知被点击', event);
   
-  event.notification.close();
+  const notification = event.notification;
+  const chatId = notification.data && notification.data.chatId;
+  
+  notification.close();
   
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(clientList) {
+      // 优先查找已打开的窗口
       for (let i = 0; i < clientList.length; i++) {
         const client = clientList[i];
-        if (client.url.indexOf(self.location.origin) === 0 && 'focus' in client) {
-          return client.focus();
+        // 只要是窗口，尝试聚焦
+        if ('focus' in client) {
+          return client.focus().then(focusedClient => {
+            // 聚焦成功后，发送消息通知页面打开特定聊天
+            if (chatId && focusedClient) {
+               focusedClient.postMessage({
+                 type: 'OPEN_CHAT',
+                 chatId: chatId
+               });
+            }
+            return focusedClient;
+          });
         }
       }
+      
+      // 如果没有找到窗口，尝试打开新窗口 (注意：在 Blob URL 下 openWindow 可能会受限或打开错误的路径)
+      // 但我们尽力尝试打开首页
       if (clients.openWindow) {
-        return clients.openWindow('/');
+        return clients.openWindow('/').then(newClient => {
+            // 新窗口打开后，可能需要一点时间加载才能接收 postMessage
+            // 这里只能尽力而为，或者依赖页面加载时的初始化逻辑（例如读取 URL 参数，但 Blob SW 很难传递 URL 参数）
+            return newClient;
+        });
       }
     })
   );
@@ -23590,7 +23613,7 @@ self.addEventListener('notificationclick', function(event) {
 
 // 处理消息传递（从主线程发送通知）
 self.addEventListener('message', function(event) {
-  console.log('Service Worker: 收到消息', event.data);
+  // console.log('Service Worker: 收到消息', event.data);
   
   if (event.data && event.data.type === 'SHOW_NOTIFICATION') {
     const notificationData = event.data.data;
@@ -23621,6 +23644,15 @@ self.addEventListener('message', function(event) {
         // 监听来自 Service Worker 的消息
         navigator.serviceWorker.addEventListener('message', event => {
           console.log('收到 Service Worker 消息:', event.data);
+          
+          // 处理打开聊天的指令
+          if (event.data && event.data.type === 'OPEN_CHAT' && event.data.chatId) {
+              console.log('执行打开聊天:', event.data.chatId);
+              // 确保 openChat 函数存在
+              if (typeof openChat === 'function') {
+                  openChat(event.data.chatId);
+              }
+          }
         });
       })
       .catch(error => {
@@ -33678,7 +33710,7 @@ ${linkedContents}
                
                if (frameData) {
                    videoContext += `\n- **画面感知**: 已截取当前视频画面并发送给你，请结合画面内容进行回复。`;
-                   console.log('【观影室】成功截取视频画面');
+                   console.log('【观影室】检测到视频画面，但消息列表未初始化，将在后续步骤中处理。');
                } else {
                    videoContext += `\n- **画面感知**: 当前无法截取画面（可能是版权受限的在线视频），请主要依赖标题和剧情常识进行互动。`;
                }
@@ -35240,6 +35272,52 @@ ${chat.settings.myAvatarLibrary && chat.settings.myAvatarLibrary.length > 0 ? ch
         `
             };
             messagesPayload.push(friendRequestInstruction);
+          }
+        }
+      }
+
+      // 【观影室修复】在 messagesPayload 初始化后处理视频截图
+      if (window.screeningRoomContext && window.screeningRoomContext.isWatching) {
+        const ctx = window.screeningRoomContext.getContext();
+        const frameData = window.screeningRoomContext.captureFrame();
+
+        if (frameData && Array.isArray(messagesPayload) && messagesPayload.length > 0) {
+          console.log('【观影室】在 messagesPayload 初始化后注入视频画面...');
+
+          // 过滤掉 null 值
+          messagesPayload = messagesPayload.filter(Boolean);
+
+          // 查找最后一条用户消息
+          const lastUserMsgIndex = messagesPayload.findLastIndex(m => m.role === 'user');
+          if (lastUserMsgIndex !== -1) {
+            const originalContent = messagesPayload[lastUserMsgIndex].content;
+            // 如果原来是字符串，转换为数组
+            if (typeof originalContent === 'string') {
+              messagesPayload[lastUserMsgIndex].content = [
+                { type: 'text', text: originalContent },
+                { type: 'image_url', image_url: { url: frameData } }
+              ];
+            } else if (Array.isArray(originalContent)) {
+              // 如果已经是数组，检查是否已有图片，避免重复添加
+              const hasImage = originalContent.some(part => part.type === 'image_url');
+              if (!hasImage) {
+                messagesPayload[lastUserMsgIndex].content.push({
+                  type: 'image_url',
+                  image_url: { url: frameData }
+                });
+              }
+            }
+            console.log('【观影室】✅ 成功将视频画面添加到最后一条用户消息');
+          } else {
+            // 如果没有用户消息，则作为单独的一条消息插入
+            messagesPayload.push({
+              role: 'user',
+              content: [
+                { type: 'text', text: '[系统提示：这是用户当前看到的视频画面]' },
+                { type: 'image_url', image_url: { url: frameData } }
+              ]
+            });
+            console.log('【观影室】✅ 将视频画面作为新消息添加');
           }
         }
       }
@@ -38193,7 +38271,6 @@ async function sendUserTransfer() {
 
     const playerWindow = document.querySelector('.music-player-window');
     const toggleBtn = document.getElementById('toggle-blur-btn');
-    let corsProxy = ""; // [修复] 将变量定义提升到函数作用域，供重试逻辑使用
 
     if (playerWindow) {
       playerWindow.style.setProperty('--music-bg-image', track.background ? `url(${track.background})` : 'none');
@@ -38235,7 +38312,7 @@ async function sendUserTransfer() {
     } else if (!track.isLocal) {
       // --- 【新增】尝试使用代理播放音频 (复用 NovelAI 的代理设置) ---
       const settings = getNovelAISettings(); // 获取设置
-      corsProxy = settings.cors_proxy; // [修复] 去掉 let，使用外层定义的变量
+      let corsProxy = settings.cors_proxy;
       
       // 如果选的是自定义 (即你的 CF Worker)
       if (corsProxy === 'custom') {
@@ -38263,17 +38340,6 @@ async function sendUserTransfer() {
     const playPromise = audioPlayer.play();
     if (playPromise !== undefined) {
       playPromise.catch(error => {
-        // --- 自动修复：如果代理播放失败，尝试直连 ---
-        if (corsProxy && corsProxy.trim() !== '' && !track.src.startsWith('data:') && audioPlayer.src.includes(encodeURIComponent(track.src))) {
-            console.warn(`代理播放失败 (${error.name})，尝试直连重试: ${track.name}`);
-            audioPlayer.src = track.src;
-            audioPlayer.play().catch(retryErr => {
-                console.error('直连重试也失败:', retryErr);
-            });
-            return; // 阻止后续报错
-        }
-        // ------------------------------------------
-
         if (error.name === 'NotAllowedError') {
           console.warn('Autoplay was prevented by the browser.');
           audioPlayer.pause();
@@ -69854,124 +69920,7 @@ async function handleFactoryReset() {
     }
 }
 
-// ========== 通知系统管理函数 ==========
 
-function isNotificationSupported() {
-    return 'Notification' in window;
-}
-
-// 更新通知开关和状态显示
-function updateNotificationButton() {
-    const switchEl = document.getElementById('notification-permission-switch');
-    const statusDisplay = document.getElementById('notification-status-display');
-    const statusText = document.getElementById('notification-status-text');
-    const requestBtn = document.getElementById('notification-request-btn');
-    const testBtn = document.getElementById('notification-test-btn');
-    const bgTestBtn = document.getElementById('notification-background-test-btn');
-    
-    if (!switchEl || !statusDisplay || !statusText) return;
-    
-    if (!isNotificationSupported()) {
-        statusDisplay.style.display = 'none';
-        if (switchEl) switchEl.disabled = true;
-        return;
-    }
-    
-    const permission = Notification.permission;
-    statusDisplay.style.display = 'block';
-    
-    switch (permission) {
-        case 'granted':
-            if (switchEl) switchEl.checked = true;
-            statusText.textContent = '通知状态：已授权 ✅';
-            statusText.style.color = '#4cd964';
-            if (requestBtn) requestBtn.style.display = 'none';
-            if (testBtn) testBtn.style.display = 'block';
-            if (bgTestBtn) bgTestBtn.style.display = 'block';
-            break;
-        case 'denied':
-            if (switchEl) switchEl.checked = false;
-            statusText.textContent = '通知状态：已拒绝 ❌（请在浏览器设置中手动开启）';
-            statusText.style.color = '#ff3b30';
-            if (requestBtn) requestBtn.style.display = 'none';
-            if (testBtn) testBtn.style.display = 'none';
-            if (bgTestBtn) bgTestBtn.style.display = 'none';
-            break;
-        default:
-            if (switchEl) switchEl.checked = false;
-            statusText.textContent = '通知状态：未授权';
-            statusText.style.color = '#666';
-            if (requestBtn) requestBtn.style.display = 'block';
-            if (testBtn) testBtn.style.display = 'none';
-            if (bgTestBtn) bgTestBtn.style.display = 'none';
-    }
-}
-
-// 请求通知权限
-async function requestNotificationPermission() {
-    if (!isNotificationSupported()) {
-        alert('您的浏览器不支持通知功能');
-        return;
-    }
-    
-    if (Notification.permission === 'granted') {
-        alert('通知权限已授予');
-        return;
-    }
-    
-    if (Notification.permission === 'denied') {
-        alert('通知权限已被拒绝，请在浏览器设置中手动开启');
-        return;
-    }
-    
-    const permission = await Notification.requestPermission();
-    updateNotificationButton();
-    
-    if (permission === 'granted') {
-        showSystemNotification('后台通知已开启', '当页面切到后台时，您将收到通知提醒');
-        startKeepAlive();
-    }
-}
-
-// 显示系统通知
-function showSystemNotification(title, body) {
-    if (Notification.permission !== 'granted') return;
-    try {
-        new Notification(title, { body: body, tag: 'system-notification' });
-    } catch (error) {
-        console.error('发送通知失败:', error);
-    }
-}
-
-// 发送测试通知
-function sendTestNotification() {
-    if (Notification.permission !== 'granted') {
-        alert('请先开启通知权限');
-        return;
-    }
-    
-    try {
-        const notification = new Notification('测试通知', {
-            body: '这是一条测试通知。如果您看到这条消息，说明通知功能正常工作！',
-            tag: 'test-notification',
-            requireInteraction: false,
-            silent: false
-        });
-        
-        notification.onclick = () => {
-            window.focus();
-            notification.close();
-        };
-        
-        setTimeout(() => notification.close(), 5000);
-        console.log('✅ 测试通知已发送');
-    } catch (error) {
-        console.error('❌ 发送测试通知失败:', error);
-        alert('发送测试通知失败：' + error.message);
-    }
-}
-
-// ========== 通知系统管理函数结束 ==========
 
 const enableNotifyBtn = document.getElementById('enable-system-notifications-btn');
 if (enableNotifyBtn) {
@@ -70277,18 +70226,11 @@ if (Notification.permission === 'granted') {
 
 // ========== 后台保活系统结束 ==========
 
-/*
-// 2. 测试系统通知（5秒后发送，测试后台通知功能）
+// 2. 测试系统通知（5秒后发送）
 const testSystemNotifyBtn = document.getElementById('test-system-notify-btn');
 if (testSystemNotifyBtn) {
     testSystemNotifyBtn.addEventListener('click', () => {
-        if (Notification.permission !== 'granted') {
-            alert('请先点击"允许系统推送"旁的"点击授权"按钮，授予通知权限！');
-            return;
-        }
-        
-        // 提示用户关闭弹窗后操作
-        alert('关闭此提示后，请立即切换到其他应用或锁屏！\n\n5秒后会发送通知，测试后台通知功能是否正常。');
+        alert('点击确定后，请立即切换到其他应用或锁屏！\n\n5秒后会发送通知，测试后台通知功能是否正常。');
         
         console.log('🧪 后台通知测试：5秒倒计时开始');
         
@@ -70319,16 +70261,49 @@ if (testSystemNotifyBtn) {
                         console.log('✅ 后台测试通知已通过Service Worker发送');
                     }).catch(err => {
                         console.warn('Service Worker通知失败，尝试普通通知:', err);
-                        fallbackNotification();
+                        // 回退到普通通知
+                        try {
+                            const notification = new Notification('后台通知测试', {
+                                body: '如果你在锁屏/其他应用看到这条通知，说明后台通知功能完全正常！🎉',
+                                tag: 'background-test',
+                                requireInteraction: false,
+                                silent: false
+                            });
+                            
+                            notification.onclick = function() {
+                                window.focus();
+                                notification.close();
+                            };
+                            
+                            setTimeout(() => notification.close(), 10000);
+                            console.log('✅ 后台测试通知已通过普通API发送');
+                        } catch (error) {
+                            console.error('❌ 发送测试通知失败:', error);
+                        }
                     });
                 }).catch(() => {
-                    fallbackNotification();
+                    // Service Worker未就绪，使用普通通知
+                    try {
+                        const notification = new Notification('后台通知测试', {
+                            body: '如果你在锁屏/其他应用看到这条通知，说明后台通知功能完全正常！🎉',
+                            tag: 'background-test',
+                            requireInteraction: false,
+                            silent: false
+                        });
+                        
+                        notification.onclick = function() {
+                            window.focus();
+                            notification.close();
+                        };
+                        
+                        setTimeout(() => notification.close(), 10000);
+                        console.log('✅ 后台测试通知已通过普通API发送');
+                    } catch (error) {
+                        console.error('❌ 发送测试通知失败:', error);
+                    }
                 });
             } else {
-                fallbackNotification();
-            }
-            
-            function fallbackNotification() {
+                // 浏览器不支持Service Worker，使用普通通知
                 try {
                     const notification = new Notification('后台通知测试', {
                         body: '如果你在锁屏/其他应用看到这条通知，说明后台通知功能完全正常！🎉',
@@ -70351,7 +70326,6 @@ if (testSystemNotifyBtn) {
         }, 5000);
     });
 }
-*/
 
 
 

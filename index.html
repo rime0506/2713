@@ -23688,6 +23688,254 @@ if (!Array.prototype.findLastIndex) {
   });
 }
 
+// ========== 后台保活系统（从喵呜34.html移植）==========
+// 创建静音音频元素
+const silentAudio = document.createElement('audio');
+silentAudio.id = 'silent-audio-player';
+silentAudio.loop = true;
+silentAudio.preload = 'auto';
+silentAudio.style.display = 'none';
+silentAudio.src = 'data:audio/wav;base64,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';
+document.body.appendChild(silentAudio);
+
+// 后台保活系统
+const BackgroundSystem = {
+    heartbeat: {
+        baseInterval: 30000,      // 基准心跳间隔：30秒
+        jitterRange: 10000,       // 随机抖动范围：±10秒
+        timeoutId: null,
+        isRunning: false,
+        lastBeat: Date.now(),
+        beatCount: 0
+    },
+    audio: {
+        context: null,
+        source: null,
+        gainNode: null,
+        isActive: false
+    },
+    state: {
+        isBackground: document.hidden,
+        lastActivity: Date.now(),
+        networkOnline: navigator.onLine
+    }
+};
+
+// 计算带随机抖动的下次心跳间隔
+function getNextHeartbeatInterval() {
+    const { baseInterval, jitterRange } = BackgroundSystem.heartbeat;
+    const jitter = Math.random() * jitterRange * 2 - jitterRange;
+    const interval = baseInterval + jitter;
+    return Math.max(15000, Math.min(60000, interval));
+}
+
+// 执行一次心跳
+function performHeartbeat() {
+    const now = Date.now();
+    BackgroundSystem.heartbeat.lastBeat = now;
+    BackgroundSystem.heartbeat.beatCount++;
+    
+    const state = {
+        timestamp: now,
+        isBackground: document.hidden,
+        beatCount: BackgroundSystem.heartbeat.beatCount,
+        networkOnline: navigator.onLine
+    };
+    
+    try {
+        localStorage.setItem('app_heartbeat', JSON.stringify(state));
+    } catch (e) {
+        console.warn('心跳状态存储失败:', e);
+    }
+    
+    console.log(`💓 后台心跳 #${state.beatCount} | 下次间隔: ${getNextHeartbeatInterval() / 1000}秒`);
+    
+    scheduleNextHeartbeat();
+}
+
+// 调度下次心跳
+function scheduleNextHeartbeat() {
+    if (BackgroundSystem.heartbeat.timeoutId) {
+        clearTimeout(BackgroundSystem.heartbeat.timeoutId);
+    }
+    
+    const interval = getNextHeartbeatInterval();
+    
+    BackgroundSystem.heartbeat.timeoutId = setTimeout(() => {
+        performHeartbeat();
+    }, interval);
+}
+
+// 启动心跳系统
+function startHeartbeat() {
+    if (BackgroundSystem.heartbeat.isRunning) {
+        console.log('心跳已在运行中');
+        return;
+    }
+    
+    BackgroundSystem.heartbeat.isRunning = true;
+    console.log('🚀 启动后台心跳系统（随机抖动模式）');
+    performHeartbeat();
+}
+
+// 停止心跳系统
+function stopHeartbeat() {
+    if (!BackgroundSystem.heartbeat.isRunning) {
+        return;
+    }
+    
+    if (BackgroundSystem.heartbeat.timeoutId) {
+        clearTimeout(BackgroundSystem.heartbeat.timeoutId);
+        BackgroundSystem.heartbeat.timeoutId = null;
+    }
+    
+    BackgroundSystem.heartbeat.isRunning = false;
+    console.log('⏹️ 停止后台心跳系统');
+}
+
+// 初始化音频保活
+function initAudioKeepAlive() {
+    if (BackgroundSystem.audio.context) {
+        return true;
+    }
+    
+    try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        BackgroundSystem.audio.context = new AudioContext();
+        
+        const sampleRate = BackgroundSystem.audio.context.sampleRate;
+        const buffer = BackgroundSystem.audio.context.createBuffer(1, sampleRate * 0.1, sampleRate);
+        
+        const source = BackgroundSystem.audio.context.createBufferSource();
+        source.buffer = buffer;
+        source.loop = true;
+        
+        const gainNode = BackgroundSystem.audio.context.createGain();
+        gainNode.gain.value = 0;
+        
+        source.connect(gainNode);
+        gainNode.connect(BackgroundSystem.audio.context.destination);
+        
+        BackgroundSystem.audio.source = source;
+        BackgroundSystem.audio.gainNode = gainNode;
+        
+        console.log('✅ 音频上下文初始化成功');
+        return true;
+    } catch (error) {
+        console.warn('❌ 音频上下文初始化失败:', error);
+        return false;
+    }
+}
+
+// 启动音频保活
+function startAudioKeepAlive() {
+    if (BackgroundSystem.audio.isActive) {
+        return;
+    }
+    
+    // 尝试使用Web Audio API
+    if (initAudioKeepAlive()) {
+        try {
+            const { context, source } = BackgroundSystem.audio;
+            
+            if (context.state === 'suspended') {
+                context.resume();
+            }
+            
+            source.start(0);
+            BackgroundSystem.audio.isActive = true;
+            console.log('✅ Web Audio API保活已启动');
+            return;
+        } catch (error) {
+            console.warn('Web Audio API启动失败，尝试使用HTML5音频:', error);
+        }
+    }
+    
+    // 降级到HTML5音频
+    try {
+        silentAudio.volume = 0;
+        silentAudio.play().then(() => {
+            console.log('✅ HTML5音频保活已启动');
+        }).catch(error => {
+            console.warn('HTML5音频启动失败:', error);
+        });
+    } catch (error) {
+        console.warn('音频保活启动失败:', error);
+    }
+}
+
+// 停止音频保活
+function stopAudioKeepAlive() {
+    if (BackgroundSystem.audio.isActive && BackgroundSystem.audio.source) {
+        try {
+            BackgroundSystem.audio.source.stop();
+            BackgroundSystem.audio.isActive = false;
+            console.log('⏹️ Web Audio API保活已停止');
+        } catch (error) {
+            console.warn('停止Web Audio API失败:', error);
+        }
+    }
+    
+    try {
+        silentAudio.pause();
+        silentAudio.currentTime = 0;
+    } catch (error) {
+        console.warn('停止HTML5音频失败:', error);
+    }
+}
+
+// 启动保活系统
+function startKeepAlive() {
+    if (Notification.permission !== 'granted') {
+        console.warn('通知权限未授予，无法启动保活');
+        return;
+    }
+    
+    startHeartbeat();
+    startAudioKeepAlive();
+    localStorage.setItem('enable_background_system', 'true');
+    console.log('✅ 后台保活系统已启动');
+}
+
+// 停止保活系统
+function stopKeepAlive() {
+    stopHeartbeat();
+    stopAudioKeepAlive();
+    localStorage.setItem('enable_background_system', 'false');
+    console.log('⏹️ 后台保活系统已停止');
+}
+
+// 启动后台系统（只启动一次）
+function startBackgroundOnce() {
+    if (window.__backgroundStarted) return;
+    window.__backgroundStarted = true;
+
+    if (typeof initAudioKeepAlive === 'function') {
+        initAudioKeepAlive();
+    }
+
+    if (Notification.permission === 'granted') {
+        if (typeof startKeepAlive === 'function') {
+            startKeepAlive();
+        }
+    }
+}
+
+// 监听页面可见性变化
+document.addEventListener('visibilitychange', () => {
+    BackgroundSystem.state.isBackground = document.hidden;
+    
+    const isEnabled = localStorage.getItem('enable_background_system') === 'true';
+    if (isEnabled && Notification.permission === 'granted') {
+        if (document.hidden) {
+            console.log('页面切到后台，保活系统继续运行');
+        } else {
+            console.log('页面切到前台');
+        }
+    }
+});
+// ========== 后台保活系统结束 ==========
+
 const dynamicIslandContent = document.getElementById('dynamic-island-content');
 const islandAlbumArt = document.getElementById('island-album-art');
 const islandLyricContainer = document.getElementById('island-lyric-container');
@@ -29559,6 +29807,26 @@ async function saveNaiBinding() {
     }
   }
 
+  // 系统通知函数（后台保活补充）
+  async function triggerSystemNotify(text) {
+    if (!('Notification' in window)) return;
+
+    if (Notification.permission === 'default') {
+      await Notification.requestPermission();
+    }
+
+    if (Notification.permission !== 'granted') return;
+
+    try {
+      new Notification('EPhone 消息', {
+        body: text.slice(0, 40),
+        silent: false
+      });
+    } catch (e) {
+      console.warn('系统通知发送失败:', e);
+    }
+  }
+
   function showNotification(chatId, messageContent, isTest = false) { // 增加 isTest 参数兼容测试按钮
     playNotificationSound();
 
@@ -29598,6 +29866,8 @@ async function saveNaiBinding() {
                         });
                     } catch (e) {
                         console.error("系统通知发送失败", e);
+                        // 降级到简单系统通知
+                        triggerSystemNotify(messageContent);
                     }
                 });
             }).catch(() => {
@@ -29610,6 +29880,8 @@ async function saveNaiBinding() {
                     });
                 } catch (e) {
                     console.warn("系统通知发送失败", e);
+                    // 降级到简单系统通知
+                    triggerSystemNotify(messageContent);
                 }
             });
         } else {
@@ -29622,11 +29894,19 @@ async function saveNaiBinding() {
                 });
             } catch (e) {
                 console.warn("系统通知发送失败", e);
+                // 降级到简单系统通知
+                triggerSystemNotify(messageContent);
             }
         }
         
         // 如果页面在后台或锁屏，只发系统通知，不发应用内横幅
         if (document.visibilityState === 'hidden' || document.hidden) {
+            return;
+        }
+    } else {
+        // 如果通知权限未授予，但在后台时尝试触发系统通知
+        if (document.visibilityState === 'hidden' || document.hidden) {
+            triggerSystemNotify(messageContent);
             return;
         }
     }
@@ -71659,6 +71939,9 @@ ${recentHistoryWithUser}
 
 
     document.getElementById('send-btn').addEventListener('click', () => {
+      // 启动后台保活系统（用户手势触发）
+      startBackgroundOnce();
+      
       playSilentAudio();
       const content = chatInput.value.trim();
       if (!content || !state.activeChatId) return;

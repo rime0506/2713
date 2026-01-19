@@ -29807,116 +29807,100 @@ async function saveNaiBinding() {
     }
   }
 
-  // 系统通知函数（后台保活补充）
-  async function triggerSystemNotify(text) {
-    if (!('Notification' in window)) return;
-
-    if (Notification.permission === 'default') {
-      await Notification.requestPermission();
-    }
-
-    if (Notification.permission !== 'granted') return;
-
-    try {
-      new Notification('EPhone 消息', {
-        body: text.slice(0, 40),
-        silent: false
-      });
-    } catch (e) {
-      console.warn('系统通知发送失败:', e);
-    }
-  }
-
-  function showNotification(chatId, messageContent, isTest = false) { // 增加 isTest 参数兼容测试按钮
+  function showNotification(chatId, messageContent, isTest = false) {
     playNotificationSound();
-
-    // 1. 获取头像和名字
+    
+    clearTimeout(notificationTimeout);
+    const chat = state.chats[chatId];
+    if (!chat && !isTest) return;
+    
+    // 检查页面是否在后台
+    const isBackground = document.hidden;
+    
+    // 获取头像和名字
     let avatarUrl = 'https://s3plus.meituan.net/opapisdk/op_ticket_885190757_1758510900942_qdqqd_djw0z2.jpeg'; // 默认
     let titleText = 'EPhone 消息';
-
-    if (chatId && state.chats[chatId]) {
-        const chat = state.chats[chatId];
+    
+    if (chat) {
         titleText = chat.name;
         avatarUrl = chat.settings.aiAvatar || chat.settings.groupAvatar || defaultAvatar;
     }
-
-    // ▼▼▼▼▼▼▼▼▼▼ 修改部分：发送系统通知（支持锁屏和后台）▼▼▼▼▼▼▼▼▼▼
-    // 如果浏览器支持通知，并且用户已授权
-    if ('Notification' in window && Notification.permission === 'granted') {
-        // 优先使用 Service Worker 发送通知（支持锁屏和后台）
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.ready.then(registration => {
-                // 直接使用 registration.showNotification（最可靠的方式）
-                registration.showNotification(titleText, {
+    
+    // 如果在后台且有通知权限，使用浏览器原生通知
+    if (isBackground && 'Notification' in window && Notification.permission === 'granted') {
+        // 尝试通过 Service Worker 发送通知
+        if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+            navigator.serviceWorker.controller.postMessage({
+                type: 'SHOW_NOTIFICATION',
+                data: {
+                    title: titleText,
                     body: messageContent,
                     icon: avatarUrl,
-                    badge: 'https://s3plus.meituan.net/opapisdk/op_ticket_885190757_1758510900942_qdqqd_djw0z2.jpeg',
-                    vibrate: [200, 100, 200],
                     tag: chatId ? `chat-${chatId}` : 'ephone-msg',
-                    requireInteraction: false,
                     data: { chatId: chatId }
-                }).catch(err => {
-                    console.warn('Service Worker 通知发送失败，尝试普通通知:', err);
-                    // 如果 Service Worker 失败，回退到普通 Notification API
-                    try {
-                        new Notification(titleText, {
-                            body: messageContent,
-                            icon: avatarUrl,
-                            tag: chatId ? `chat-${chatId}` : 'ephone-msg'
-                        });
-                    } catch (e) {
-                        console.error("系统通知发送失败", e);
-                        // 降级到简单系统通知
-                        triggerSystemNotify(messageContent);
-                    }
-                });
-            }).catch(() => {
-                // Service Worker 未就绪，使用普通 Notification API
-                try {
-                    new Notification(titleText, {
-                        body: messageContent,
-                        icon: avatarUrl,
-                        tag: chatId ? `chat-${chatId}` : 'ephone-msg'
-                    });
-                } catch (e) {
-                    console.warn("系统通知发送失败", e);
-                    // 降级到简单系统通知
-                    triggerSystemNotify(messageContent);
                 }
             });
         } else {
-            // 浏览器不支持 Service Worker，使用普通 Notification API
+            // 直接使用 Notification API（最可靠的方式）
             try {
-                new Notification(titleText, {
+                const notification = new Notification(titleText, {
                     body: messageContent,
                     icon: avatarUrl,
-                    tag: chatId ? `chat-${chatId}` : 'ephone-msg'
+                    tag: chatId ? `chat-${chatId}` : 'ephone-msg',
+                    badge: 'https://s3plus.meituan.net/opapisdk/op_ticket_885190757_1758510900942_qdqqd_djw0z2.jpeg',
+                    requireInteraction: false,
+                    data: { chatId: chatId }
                 });
+                
+                notification.onclick = function() {
+                    window.focus();
+                    if (typeof openChat === 'function' && chatId) {
+                        openChat(chatId);
+                    }
+                    notification.close();
+                };
+                
+                console.log('✅ 后台系统通知已发送');
             } catch (e) {
-                console.warn("系统通知发送失败", e);
-                // 降级到简单系统通知
-                triggerSystemNotify(messageContent);
+                console.error('❌ 后台系统通知发送失败:', e);
             }
         }
         
-        // 如果页面在后台或锁屏，只发系统通知，不发应用内横幅
-        if (document.visibilityState === 'hidden' || document.hidden) {
-            return;
-        }
-    } else {
-        // 如果通知权限未授予，但在后台时尝试触发系统通知
-        if (document.visibilityState === 'hidden' || document.hidden) {
-            triggerSystemNotify(messageContent);
-            return;
+        updateBackButtonUnreadCount();
+        return;
+    }
+    
+    // 前台通知：显示应用内通知栏
+    if (!isBackground) {
+        // 如果在前台且有通知权限，也发送系统通知（可选）
+        if ('Notification' in window && Notification.permission === 'granted') {
+            try {
+                const notification = new Notification(titleText, {
+                    body: messageContent,
+                    icon: avatarUrl,
+                    tag: chatId ? `chat-${chatId}` : 'ephone-msg',
+                    badge: 'https://s3plus.meituan.net/opapisdk/op_ticket_885190757_1758510900942_qdqqd_djw0z2.jpeg',
+                    requireInteraction: false,
+                    data: { chatId: chatId }
+                });
+                
+                notification.onclick = function() {
+                    if (typeof openChat === 'function' && chatId) {
+                        openChat(chatId);
+                    }
+                    notification.close();
+                };
+            } catch (e) {
+                console.warn('前台系统通知发送失败:', e);
+            }
         }
     }
-
-    clearTimeout(notificationTimeout);
-    const chat = state.chats[chatId];
+    
+    // 显示应用内通知栏
     if (!chat) return;
-
-
+    
     const bar = document.getElementById('notification-bar');
+    if (!bar) return;
 
 
     document.getElementById('notification-avatar').src = chat.settings.aiAvatar || chat.settings.groupAvatar || defaultAvatar;
@@ -70510,80 +70494,58 @@ if (Notification.permission === 'granted') {
 const testSystemNotifyBtn = document.getElementById('test-system-notify-btn');
 if (testSystemNotifyBtn) {
     testSystemNotifyBtn.addEventListener('click', () => {
-        alert('点击确定后，请立即切换到其他应用或锁屏！\n\n5秒后会发送通知，测试后台通知功能是否正常。');
+        // 检查通知权限
+        if (!('Notification' in window)) {
+            alert('您的浏览器不支持通知功能');
+            return;
+        }
         
-        console.log('🧪 后台通知测试：5秒倒计时开始');
+        if (Notification.permission !== 'granted') {
+            alert('请先授予通知权限！\n\n请点击浏览器地址栏旁边的锁图标，然后允许通知权限。');
+            return;
+        }
         
-        let countdown = 5;
-        const countdownInterval = setInterval(() => {
-            console.log(`⏰ 倒计时: ${countdown} 秒`);
-            countdown--;
+        // 立即发送前台测试通知
+        try {
+            const notification = new Notification('前台通知测试', {
+                body: '这是一条前台测试通知。如果您看到这条消息，说明前台通知功能正常工作！',
+                tag: 'test-notification',
+                requireInteraction: false,
+                silent: false
+            });
             
-            if (countdown < 0) {
-                clearInterval(countdownInterval);
-            }
-        }, 1000);
-        
-        setTimeout(() => {
-            console.log('📤 5秒已到，发送后台测试通知...');
+            notification.onclick = () => {
+                window.focus();
+                notification.close();
+            };
             
-            // 优先使用 Service Worker 发送通知（支持锁屏和后台）
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.ready.then(registration => {
-                    registration.showNotification('后台通知测试', {
-                        body: '如果你在锁屏/其他应用看到这条通知，说明后台通知功能完全正常！🎉',
-                        icon: 'https://s3plus.meituan.net/opapisdk/op_ticket_885190757_1758510900942_qdqqd_djw0z2.jpeg',
-                        badge: 'https://s3plus.meituan.net/opapisdk/op_ticket_885190757_1758510900942_qdqqd_djw0z2.jpeg',
-                        tag: 'background-test',
-                        requireInteraction: false,
-                        vibrate: [200, 100, 200]
-                    }).then(() => {
-                        console.log('✅ 后台测试通知已通过Service Worker发送');
-                    }).catch(err => {
-                        console.warn('Service Worker通知失败，尝试普通通知:', err);
-                        // 回退到普通通知
-                        try {
-                            const notification = new Notification('后台通知测试', {
-                                body: '如果你在锁屏/其他应用看到这条通知，说明后台通知功能完全正常！🎉',
-                                tag: 'background-test',
-                                requireInteraction: false,
-                                silent: false
-                            });
-                            
-                            notification.onclick = function() {
-                                window.focus();
-                                notification.close();
-                            };
-                            
-                            setTimeout(() => notification.close(), 10000);
-                            console.log('✅ 后台测试通知已通过普通API发送');
-                        } catch (error) {
-                            console.error('❌ 发送测试通知失败:', error);
-                        }
-                    });
-                }).catch(() => {
-                    // Service Worker未就绪，使用普通通知
-                    try {
-                        const notification = new Notification('后台通知测试', {
-                            body: '如果你在锁屏/其他应用看到这条通知，说明后台通知功能完全正常！🎉',
-                            tag: 'background-test',
-                            requireInteraction: false,
-                            silent: false
-                        });
-                        
-                        notification.onclick = function() {
-                            window.focus();
-                            notification.close();
-                        };
-                        
-                        setTimeout(() => notification.close(), 10000);
-                        console.log('✅ 后台测试通知已通过普通API发送');
-                    } catch (error) {
-                        console.error('❌ 发送测试通知失败:', error);
-                    }
-                });
-            } else {
-                // 浏览器不支持Service Worker，使用普通通知
+            setTimeout(() => notification.close(), 5000);
+            console.log('✅ 前台测试通知已发送');
+        } catch (error) {
+            console.error('❌ 发送前台测试通知失败:', error);
+            alert('发送测试通知失败：' + error.message);
+            return;
+        }
+        
+        // 询问是否测试后台通知
+        if (confirm('前台测试通知已发送！\n\n是否继续测试后台通知？\n\n点击"确定"后，请立即切换到其他应用或锁屏！\n\n10秒后会发送后台测试通知。')) {
+            alert('请立即切换到其他应用或锁屏！\n\n10秒后会发送通知，测试后台通知功能是否正常。');
+            
+            console.log('🧪 后台通知测试：10秒倒计时开始');
+            
+            let countdown = 10;
+            const countdownInterval = setInterval(() => {
+                console.log(`⏰ 倒计时: ${countdown} 秒`);
+                countdown--;
+                
+                if (countdown < 0) {
+                    clearInterval(countdownInterval);
+                }
+            }, 1000);
+            
+            setTimeout(() => {
+                console.log('📤 10秒已到，发送后台测试通知...');
+                
                 try {
                     const notification = new Notification('后台通知测试', {
                         body: '如果你在锁屏/其他应用看到这条通知，说明后台通知功能完全正常！🎉',
@@ -70598,12 +70560,13 @@ if (testSystemNotifyBtn) {
                     };
                     
                     setTimeout(() => notification.close(), 10000);
-                    console.log('✅ 后台测试通知已通过普通API发送');
+                    console.log('✅ 后台测试通知已发送');
                 } catch (error) {
-                    console.error('❌ 发送测试通知失败:', error);
+                    console.error('❌ 发送后台测试通知失败:', error);
+                    alert('发送后台测试通知失败：' + error.message);
                 }
-            }
-        }, 5000);
+            }, 10000);
+        }
     });
 }
 

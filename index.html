@@ -5329,6 +5329,7 @@
     background-color: rgba(0, 0, 0, 0.3);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
+    z-index: 10002 !important; /* 确保在聊天小窗口(z-index: 10001)之上 */
 }
 .character-profile-content {
     width: 320px;
@@ -23070,8 +23071,18 @@ body.frame-mode-active .cphone-dock-container {
             <div class="sticker-generate-area">
                 <h3 style="margin: 0 0 15px 0; font-size: 16px; color: var(--text-color);">生成表情包</h3>
                 <p style="font-size: 14px; color: #666; margin-bottom: 15px; line-height: 1.6;">
-                    使用 NovelAI 生成 LINE 风格的表情包。系统将使用内置提示词自动生成 3×3 网格布局的表情包。
+                    使用AI生成 LINE 风格的表情包。系统将使用内置提示词自动生成 3×3 网格布局的表情包。你可以选择使用 NovelAI 或通用生图AI。
                 </p>
+                
+                <!-- AI模型选择 -->
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 8px; font-size: 14px; font-weight: 500; color: var(--text-color);">选择AI模型</label>
+                    <select id="stickerAiModelSelect" class="settings-select" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; box-sizing: border-box;">
+                        <option value="novelai">NovelAI（高质量，需要API Key）</option>
+                        <option value="generic">通用生图AI（免费，速度较快）</option>
+                    </select>
+                    <div style="font-size: 11px; color: #999; margin-top: 4px;">提示：NovelAI质量更高但需要配置API Key，通用AI免费但效果一般</div>
+                </div>
                 
                 <!-- 指令要求输入 -->
                 <div style="margin-bottom: 15px;">
@@ -27700,13 +27711,43 @@ function initDatabase(userId) {
             }
         }, 100); // 稍微延迟以确保数据已就绪
     } else {
-        // 离开观影室时，隐藏所有悬浮球
+        // 离开观影室时，完全清理所有悬浮球（修复：改为移除而不是隐藏）
+        console.log('🧹 showScreen: 清理观影室悬浮按钮和窗口');
         const floatingBtn = document.getElementById('floating-chat-toggle-btn');
-        if (floatingBtn) floatingBtn.style.display = 'none';
+        if (floatingBtn) {
+            floatingBtn.style.display = 'none';
+            floatingBtn.remove(); // 完全移除主悬浮球
+            console.log('✅ showScreen: 主悬浮球已移除');
+        }
         const minBtn = document.getElementById('floating-chat-mini-btn');
         if (minBtn) {
             minBtn.style.display = 'none';
             minBtn.remove(); // 完全移除，确保不会残留
+            console.log('✅ showScreen: 最小化悬浮球已移除');
+        }
+        
+        // 完整清理悬浮聊天窗口状态
+        const chatScreen = document.getElementById('chat-interface-screen');
+        if (chatScreen && chatScreen.classList.contains('floating-chat-window')) {
+            console.log('🧹 showScreen: 重置悬浮聊天窗口');
+            chatScreen.classList.remove('active');
+            chatScreen.classList.remove('floating-chat-window');
+            chatScreen.classList.remove('minimized');
+            chatScreen.style.display = 'none';
+            chatScreen.style.zIndex = '';
+            
+            // 移除关闭和最小化按钮
+            const closeBtn = document.getElementById('floating-chat-close-btn');
+            if (closeBtn) {
+                closeBtn.remove();
+                console.log('✅ showScreen: 关闭按钮已移除');
+            }
+            const minimizeBtn = document.getElementById('floating-chat-minimize-btn');
+            if (minimizeBtn) {
+                minimizeBtn.remove();
+                console.log('✅ showScreen: 最小化按钮已移除');
+            }
+            console.log('✅ showScreen: 悬浮聊天窗口已完全重置');
         }
     }
     // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ 观影室角色列表刷新结束 ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
@@ -80301,9 +80342,18 @@ async function generateSticker() {
     const btnText = document.getElementById('generateStickerBtnText');
     const statusDiv = document.getElementById('stickerGenerateStatus');
     const textInput = document.getElementById('stickerTextInput');
+    const aiModelSelect = document.getElementById('stickerAiModelSelect');
     
-    const apiKey = localStorage.getItem('novelaiApiKey');
-    if (!apiKey) { alert('请先在系统设置中配置 NovelAI API Key'); return; }
+    const selectedModel = aiModelSelect.value; // 'novelai' 或 'generic'
+    
+    // 如果选择NovelAI，检查API Key
+    if (selectedModel === 'novelai') {
+        const apiKey = localStorage.getItem('novelaiApiKey');
+        if (!apiKey) { 
+            alert('请先在系统设置中配置 NovelAI API Key，或选择使用通用生图AI'); 
+            return; 
+        }
+    }
     
     const userInstruction = textInput.value.trim();
     const subjectContent = userInstruction || "a cute anime character";
@@ -80322,25 +80372,44 @@ async function generateSticker() {
     document.getElementById('stickerPreviewArea').style.display = 'none';
     
     try {
-        const result = await callNovelAIAPI(finalPrompt, '', true, null, {
-            skipSystemPrompt: true,
-            extraNegativePrompt: extraNegative,
-            size: '1024x1024'
-        });
+        let imageUrl;
         
-        if (result.success && result.imageUrl) {
-            currentStickerImageUrl = result.imageUrl;
-            const previewDiv = document.getElementById('stickerPreview');
-            previewDiv.innerHTML = `<img src="${result.imageUrl}" alt="生成的表情包" style="width: 100%; display: block;">`;
-            document.getElementById('stickerPreviewArea').style.display = 'block';
-            statusDiv.style.color = '#155724';
-            statusDiv.textContent = '✅ 表情包生成成功！';
-            btnText.textContent = '🎨 生成表情包';
+        if (selectedModel === 'novelai') {
+            // 使用 NovelAI
+            const result = await callNovelAIAPI(finalPrompt, '', true, null, {
+                skipSystemPrompt: true,
+                extraNegativePrompt: extraNegative,
+                size: '1024x1024'
+            });
+            
+            if (result.success && result.imageUrl) {
+                imageUrl = result.imageUrl;
+            } else {
+                throw new Error(result.error || '未知错误');
+            }
         } else {
-            statusDiv.style.color = '#721c24';
-            statusDiv.textContent = `❌ 生成失败：${result.error || '未知错误'}`;
-            btnText.textContent = '🎨 生成表情包';
+            // 使用通用生图AI (Pollinations)
+            const encodedPrompt = encodeURIComponent(finalPrompt);
+            imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=1024&nologo=true`;
+            
+            // 预加载图片以确保生成完成
+            await new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => resolve();
+                img.onerror = () => reject(new Error('图片加载失败'));
+                img.src = imageUrl;
+            });
         }
+        
+        // 显示生成结果
+        currentStickerImageUrl = imageUrl;
+        const previewDiv = document.getElementById('stickerPreview');
+        previewDiv.innerHTML = `<img src="${imageUrl}" alt="生成的表情包" style="width: 100%; display: block;">`;
+        document.getElementById('stickerPreviewArea').style.display = 'block';
+        statusDiv.style.color = '#155724';
+        statusDiv.textContent = '✅ 表情包生成成功！';
+        btnText.textContent = '🎨 生成表情包';
+        
     } catch (error) {
         statusDiv.style.color = '#721c24';
         statusDiv.textContent = `❌ 生成失败：${error.message || '未知错误'}`;
@@ -81312,21 +81381,52 @@ async function saveSplitStickersToMyEmojis() {
                 mutations.forEach((mutation) => {
                     if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
                         if (movieScreen.classList.contains('active')) {
+                            console.log('🎬 进入观影室，显示悬浮按钮');
                             createFloatingChatButton();
                             if (floatingBtn) floatingBtn.style.display = 'flex';
                         } else {
-                            // 离开观影室时，隐藏主悬浮球
-                            if (floatingBtn) floatingBtn.style.display = 'none';
+                            console.log('🚪 退出观影室，清理悬浮按钮');
+                            // 离开观影室时，完全隐藏并移除所有悬浮球
+                            const mainFloatingBtn = document.getElementById('floating-chat-toggle-btn');
+                            if (mainFloatingBtn) {
+                                mainFloatingBtn.style.display = 'none';
+                                mainFloatingBtn.remove(); // 完全移除主悬浮球
+                                console.log('✅ 主悬浮球已移除');
+                            }
+                            
                             // 移除最小化后的悬浮球
                             const minBtn = document.getElementById('floating-chat-mini-btn');
                             if (minBtn) {
                                 minBtn.style.display = 'none';
                                 minBtn.remove(); // 完全移除，确保不会残留
+                                console.log('✅ 最小化悬浮球已移除');
                             }
-                            // 离开时关闭悬浮窗
-                            if (chatScreen.classList.contains('floating-chat-window')) {
-                                toggleFloatingChat(); 
+                            
+                            // 关闭悬浮聊天窗口（完整清理）
+                            if (chatScreen && chatScreen.classList.contains('floating-chat-window')) {
+                                console.log('🧹 关闭并重置悬浮聊天窗口');
+                                chatScreen.classList.remove('active');
+                                chatScreen.classList.remove('floating-chat-window');
+                                chatScreen.classList.remove('minimized');
+                                chatScreen.style.display = 'none';
+                                chatScreen.style.zIndex = '';
+                                
+                                // 移除关闭和最小化按钮
+                                const closeBtn = document.getElementById('floating-chat-close-btn');
+                                if (closeBtn) {
+                                    closeBtn.remove();
+                                    console.log('✅ 关闭按钮已移除');
+                                }
+                                const minimizeBtn = document.getElementById('floating-chat-minimize-btn');
+                                if (minimizeBtn) {
+                                    minimizeBtn.remove();
+                                    console.log('✅ 最小化按钮已移除');
+                                }
                             }
+                            
+                            // 重置 floatingBtn 变量
+                            floatingBtn = null;
+                            console.log('✅ 观影室清理完成');
                         }
                     }
                 });
